@@ -84,4 +84,6 @@ dependencies {
 
     implementation ("com.cloudinary:cloudinary-android:2.2.0")
 
+    implementation("androidx.compose.material:material-icons-extended:1.6.7")
+
 }

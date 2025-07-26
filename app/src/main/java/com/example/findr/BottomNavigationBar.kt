@@ -1,70 +1,69 @@
 package com.example.findr
 
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.navigation.NavHostController
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 
-@Composable
-fun BottomNavigationBar(navController: NavHostController) {
-    val currentRoute = currentRoute(navController)
-
-    NavigationBar {
-        NavigationBarItem(
-            selected = currentRoute == "home",
-            onClick = { navController.navigate("home") },
-            icon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.home),
-                    contentDescription = "Home"
-                )
-            },
-            label = { Text("Home") }
-        )
-
-        NavigationBarItem(
-            selected = currentRoute == "post",
-            onClick = { navController.navigate("post") },
-            icon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.post),
-                    contentDescription = "Post"
-                )
-            },
-            label = { Text("Post") }
-        )
-
-        NavigationBarItem(
-            selected = currentRoute == "myitems",
-            onClick = { navController.navigate("myitems") },
-            icon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.items),
-                    contentDescription = "My Items"
-                )
-            },
-            label = { Text("My Items") }
-        )
-
-        NavigationBarItem(
-            selected = currentRoute == "profile",
-            onClick = { navController.navigate("profile") },
-            icon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.profile1),
-                    contentDescription = "Profile"
-                )
-            },
-            label = { Text("Profile") }
-        )
-    }
+// ✅ Defines all the screens in your bottom navigation bar for type-safety
+sealed class Screen(val route: String, val label: String, val iconResId: Int) {
+    object Home : Screen("home", "Home", R.drawable.home)
+    object Post : Screen("post", "Post", R.drawable.post)
+    object MyItems : Screen("myitems", "My Items", R.drawable.items)
+    object Profile : Screen("profile", "Profile", R.drawable.profile1)
 }
 
-// 🔍 Utility function to detect the current screen
+// ✅ This is now the fully functional BottomNavigationBar composable
 @Composable
-fun currentRoute(navController: NavHostController): String? {
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    return navBackStackEntry?.destination?.route
+fun BottomNavigationBar(navController: NavController) {
+    val navItems = listOf(
+        Screen.Home,
+        Screen.Post,
+        Screen.MyItems,
+        Screen.Profile
+    )
+
+    NavigationBar(
+        containerColor = Color.White
+    ) {
+        val navBackStackEntry by navController.currentBackStackEntryAsState()
+        val currentDestination = navBackStackEntry?.destination
+
+        navItems.forEach { screen ->
+            val isSelected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
+            NavigationBarItem(
+                selected = isSelected,
+                onClick = {
+                    navController.navigate(screen.route) {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                icon = {
+                    Icon(
+                        painter = painterResource(id = screen.iconResId),
+                        contentDescription = screen.label,
+                        modifier = Modifier.size(24.dp) // Ensures correct icon size
+                    )
+                },
+                label = { Text(screen.label) },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color(0xFFF9A825), // Orange
+                    selectedTextColor = Color(0xFFF9A825),
+                    unselectedIconColor = Color.Gray,
+                    unselectedTextColor = Color.Gray
+                )
+            )
+        }
+    }
 }

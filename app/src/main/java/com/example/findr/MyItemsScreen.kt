@@ -1,27 +1,39 @@
 package com.example.findr
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import java.util.concurrent.TimeUnit
+
 
 @Composable
 fun MyItemsScreen() {
     val isInPreview = LocalInspectionMode.current
-    val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
     var items by remember { mutableStateOf(listOf<PostItem>()) }
+    var isLoading by remember { mutableStateOf(true) }
 
     if (!isInPreview) {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
         LaunchedEffect(Unit) {
             FirebaseFirestore.getInstance()
                 .collection("posts")
@@ -35,34 +47,102 @@ fun MyItemsScreen() {
                         PostItem(doc.id, url, desc, timestamp)
                     }
                     items = list
+                    isLoading = false
                 }
+                .addOnFailureListener {
+                    isLoading = false
+                }
+        }
+    } else {
+        isLoading = false
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF8F9FA))
+            .padding(16.dp)
+    ) {
+        Text(
+            "My Posted Items",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else if (items.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(
+                    "You haven't posted any items yet.\nTap the 'Post' button to get started!",
+                    textAlign = TextAlign.Center,
+                    color = Color.Gray
+                )
+            }
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(items) { item ->
+                    MyItemCard(item = item)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MyItemCard(item: PostItem) {
+    val timeAgo = remember(item.timestamp) {
+        val now = System.currentTimeMillis()
+        val diff = now - item.timestamp
+        val minutes = TimeUnit.MILLISECONDS.toMinutes(diff)
+        when {
+            minutes < 1 -> "Just now"
+            minutes < 60 -> "${minutes}m ago"
+            minutes < 1440 -> "${TimeUnit.MINUTES.toHours(minutes)}h ago"
+            else -> "${TimeUnit.MINUTES.toDays(minutes)}d ago"
         }
     }
 
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text("My Posted Items", style = MaterialTheme.typography.titleLarge)
-        Spacer(modifier = Modifier.height(12.dp))
-
-        LazyVerticalGrid(columns = GridCells.Fixed(2), content = {
-            items(items) { item ->
-                Column(modifier = Modifier.padding(8.dp)) {
-                    Image(
-                        painter = rememberAsyncImagePainter(item.imageUrl),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(120.dp)
-                    )
-                    Text(item.description, style = MaterialTheme.typography.bodyMedium)
-                }
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(2.dp)
+    ) {
+        Column {
+            Image(
+                painter = rememberAsyncImagePainter(item.imageUrl),
+                contentDescription = item.description,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+            )
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    text = item.description,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2
+                )
+                Text(
+                    text = timeAgo,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
             }
-        })
+        }
     }
 }
+
 @Preview(showBackground = true)
 @Composable
 fun MyItemsScreenPreview() {
     MyItemsScreen()
 }
-
-

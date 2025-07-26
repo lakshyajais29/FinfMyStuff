@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -34,14 +35,13 @@ data class PostItem(
     val timestamp: Long = 0L
 )
 
-// MODIFICATION 1: HomeScreen no longer creates its own Scaffold.
-// It now accepts PaddingValues from the parent Scaffold.
+// ✅ CORRECTED: The paddingValues parameter has been removed.
 @Composable
-fun HomeScreen(paddingValues: PaddingValues, navController: NavController? = null) {
+fun HomeScreen(navController: NavController? = null) {
     var posts by remember { mutableStateOf(listOf<PostItem>()) }
     var searchText by remember { mutableStateOf("") }
 
-    // 🔥 Fetch posts from Firebase (No changes here)
+    // Fetch posts from Firebase
     LaunchedEffect(Unit) {
         val db = FirebaseFirestore.getInstance()
         db.collection("posts")
@@ -59,17 +59,16 @@ fun HomeScreen(paddingValues: PaddingValues, navController: NavController? = nul
             }
     }
 
-    // The Scaffold is removed from here. This Column is now the root element.
+    // ✅ The root Column no longer uses the paddingValues modifier.
     Column(
         modifier = Modifier
-            .padding(paddingValues) // Apply padding from the parent Scaffold
             .fillMaxSize()
             .background(Color(0xFFF8F9FA)) // Light gray background
             .padding(horizontal = 16.dp)
     ) {
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 🔹 Header with Logo Placeholder and back arrow
+        // Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -82,14 +81,14 @@ fun HomeScreen(paddingValues: PaddingValues, navController: NavController? = nul
             Spacer(modifier = Modifier.width(12.dp))
             Image(
                 painter = painterResource(id = R.drawable.findmystuff),
-                contentDescription = "CampusFind Logo",
+                contentDescription = "FindMyStuff Logo",
                 modifier = Modifier.height(30.dp)
             )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 🔹 Search Bar
+        // Search Bar
         OutlinedTextField(
             value = searchText,
             onValueChange = { searchText = it },
@@ -105,13 +104,13 @@ fun HomeScreen(paddingValues: PaddingValues, navController: NavController? = nul
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // 🔸 Action Buttons
+        // Action Buttons
         Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             Button(
-                onClick = { /* TODO: Navigate to Lost Item form */ },
+                onClick = { navController?.navigate("${Screen.Post.route}?itemType=Lost") },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF9A825)),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.weight(1f).height(48.dp)
@@ -119,7 +118,7 @@ fun HomeScreen(paddingValues: PaddingValues, navController: NavController? = nul
                 Text("I Lost Something", color = Color.White)
             }
             Button(
-                onClick = { /* TODO: Navigate to Found Item form */ },
+                onClick = { navController?.navigate("${Screen.Post.route}?itemType=Found") },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1A3C73)),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.weight(1f).height(48.dp)
@@ -135,10 +134,9 @@ fun HomeScreen(paddingValues: PaddingValues, navController: NavController? = nul
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold
         )
-
         Spacer(modifier = Modifier.height(12.dp))
 
-        // 🆕 Vertical Grid for posts
+        // Vertical Grid for posts
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -194,85 +192,18 @@ fun PostCard(item: PostItem) {
     }
 }
 
-@Composable
-fun BottomNavigationBar() {
-    NavigationBar(
-        containerColor = Color.White,
-        contentColor = Color.Gray
-    ) {
-        val isHomeSelected = true
 
-        NavigationBarItem(
-            selected = isHomeSelected,
-            onClick = { /* TODO: Navigate to Home */ },
-            icon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.home),
-                    contentDescription = "Home",
-                    modifier = Modifier.size(24.dp)
-                )
-            },
-            label = { Text("Home") },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color(0xFFF9A825),
-                selectedTextColor = Color(0xFFF9A825),
-                unselectedIconColor = Color.Gray,
-                unselectedTextColor = Color.Gray
-            )
-        )
-
-        NavigationBarItem(
-            selected = false,
-            onClick = { /* TODO: Navigate to Post */ },
-            icon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.post),
-                    contentDescription = "Post",
-                    modifier = Modifier.size(24.dp)
-                )
-            },
-            label = { Text("Post") }
-        )
-
-        NavigationBarItem(
-            selected = false,
-            onClick = { /* TODO: Navigate to My Items */ },
-            icon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.items),
-                    contentDescription = "My Items",
-                    modifier = Modifier.size(24.dp)
-                )
-            },
-            label = { Text("My Items") }
-        )
-
-        NavigationBarItem(
-            selected = false,
-            onClick = { /* TODO: Navigate to Profile */ },
-            icon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.profile1),
-                    contentDescription = "Profile",
-                    modifier = Modifier.size(24.dp)
-                )
-            },
-            label = { Text("Profile") }
-        )
-    }
-}
-
-
-// MODIFICATION 2: The preview now provides its own Scaffold
-// so we can see how HomeScreen looks within a real screen layout.
 @Preview(showBackground = true, widthDp = 360, heightDp = 640)
 @Composable
 fun HomeScreenPreview() {
-    // The Scaffold is now here, just for the preview
+    val navController = rememberNavController()
     Scaffold(
-        bottomBar = { BottomNavigationBar() }
+        bottomBar = { BottomNavigationBar(navController = navController) }
     ) { innerPadding ->
-        // Pass the padding from the preview's Scaffold to the HomeScreen
-        HomeScreen(paddingValues = innerPadding)
+        // ✅ The call to HomeScreen is now correct and will no longer cause an error.
+        // We also apply the padding from the Scaffold to the Box containing the screen, just for the preview.
+        Box(modifier = Modifier.padding(innerPadding)) {
+            HomeScreen(navController = navController)
+        }
     }
 }
