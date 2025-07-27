@@ -16,7 +16,6 @@ fun MainLayout() {
 
     Scaffold(
         bottomBar = {
-            // This call remains correct
             BottomNavigationBar(navController = navController)
         }
     ) { innerPadding ->
@@ -25,30 +24,51 @@ fun MainLayout() {
             startDestination = Screen.Home.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            // Home, MyItems, and Profile screens remain the same
+            // Your existing screens
             composable(Screen.Home.route) { HomeScreen(navController = navController) }
             composable(Screen.MyItems.route) { MyItemsScreen() }
             composable(Screen.Profile.route) { ProfileScreen() }
 
-            // ✅ CORRECTED: This single composable now handles all navigation to the Post screen.
+            // ✅ ADDED: New route for the Conversations screen, linked to the Chats icon
+            composable(Screen.Chats.route) { ConversationsScreen(navController = navController) }
+
+            // Post screen with optional argument
             composable(
-                // The route now includes an optional argument for itemType
                 route = "${Screen.Post.route}?itemType={itemType}",
                 arguments = listOf(
                     navArgument("itemType") {
                         type = NavType.StringType
-                        defaultValue = "Lost" // Default to "Lost" if no argument is passed (e.g., from bottom nav)
+                        defaultValue = "Lost"
                     }
                 )
             ) { backStackEntry ->
-                // Extract the argument. It will use the defaultValue if not provided.
                 val itemType = backStackEntry.arguments?.getString("itemType")
                 PostItemScreen(
-                    itemType = itemType ?: "Lost", // Pass the argument to the screen
+                    itemType = itemType ?: "Lost",
                     onUploadComplete = {
-                        navController.popBackStack() // Go back after upload is complete
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Home.route) { inclusive = true }
+                        }
                     }
                 )
+            }
+
+            // Item Details screen
+            composable(
+                route = "item_details/{postId}",
+                arguments = listOf(navArgument("postId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val postId = backStackEntry.arguments?.getString("postId") ?: ""
+                ItemDetailsScreen(postId = postId, navController = navController)
+            }
+
+            // Chat screen
+            composable(
+                route = "chat/{chatId}",
+                arguments = listOf(navArgument("chatId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val chatId = backStackEntry.arguments?.getString("chatId") ?: ""
+                ChatScreen(chatId = chatId, navController = navController)
             }
         }
     }

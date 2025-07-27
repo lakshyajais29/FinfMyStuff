@@ -35,7 +35,6 @@ data class PostItem(
     val timestamp: Long = 0L
 )
 
-// ✅ CORRECTED: The paddingValues parameter has been removed.
 @Composable
 fun HomeScreen(navController: NavController? = null) {
     var posts by remember { mutableStateOf(listOf<PostItem>()) }
@@ -53,22 +52,21 @@ fun HomeScreen(navController: NavController? = null) {
                     val url = doc.getString("imageUrl") ?: return@mapNotNull null
                     val desc = doc.getString("description") ?: "No description"
                     val timestamp = doc.getTimestamp("timestamp")?.toDate()?.time ?: 0L
+                    // Use the document ID as the PostItem ID
                     PostItem(doc.id, url, desc, timestamp)
                 }
                 posts = list
             }
     }
 
-    // ✅ The root Column no longer uses the paddingValues modifier.
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8F9FA)) // Light gray background
+            .background(Color(0xFFF8F9FA))
             .padding(horizontal = 16.dp)
     ) {
+        // ... (Header, Search, and Action Buttons remain the same)
         Spacer(modifier = Modifier.height(16.dp))
-
-        // Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -85,10 +83,7 @@ fun HomeScreen(navController: NavController? = null) {
                 modifier = Modifier.height(30.dp)
             )
         }
-
         Spacer(modifier = Modifier.height(16.dp))
-
-        // Search Bar
         OutlinedTextField(
             value = searchText,
             onValueChange = { searchText = it },
@@ -101,10 +96,7 @@ fun HomeScreen(navController: NavController? = null) {
                 focusedBorderColor = Color(0xFF1A3C73)
             )
         )
-
         Spacer(modifier = Modifier.height(20.dp))
-
-        // Action Buttons
         Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxWidth()
@@ -126,9 +118,7 @@ fun HomeScreen(navController: NavController? = null) {
                 Text("I Found Something", color = Color.White)
             }
         }
-
         Spacer(modifier = Modifier.height(24.dp))
-
         Text(
             "Recently Posted Items",
             style = MaterialTheme.typography.titleLarge,
@@ -136,21 +126,22 @@ fun HomeScreen(navController: NavController? = null) {
         )
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Vertical Grid for posts
+        // ✅ CORRECTED: Pass the navController to each PostCard
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(posts) { item ->
-                PostCard(item = item)
+                PostCard(item = item, navController = navController)
             }
         }
     }
 }
 
+// ✅ CORRECTED: This function is now fully updated
 @Composable
-fun PostCard(item: PostItem) {
+fun PostCard(item: PostItem, navController: NavController?) {
     val timeAgo = remember(item.timestamp) {
         val now = System.currentTimeMillis()
         val diff = now - item.timestamp
@@ -166,7 +157,8 @@ fun PostCard(item: PostItem) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { /* TODO: navigate to details */ }
+            // Navigate to the item details screen, passing the post's unique ID
+            .clickable { navController?.navigate("item_details/${item.id}") }
     ) {
         Image(
             painter = rememberAsyncImagePainter(item.imageUrl),
@@ -200,8 +192,6 @@ fun HomeScreenPreview() {
     Scaffold(
         bottomBar = { BottomNavigationBar(navController = navController) }
     ) { innerPadding ->
-        // ✅ The call to HomeScreen is now correct and will no longer cause an error.
-        // We also apply the padding from the Scaffold to the Box containing the screen, just for the preview.
         Box(modifier = Modifier.padding(innerPadding)) {
             HomeScreen(navController = navController)
         }

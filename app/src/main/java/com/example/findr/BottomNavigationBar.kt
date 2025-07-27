@@ -12,19 +12,21 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 
-// ✅ Defines all the screens in your bottom navigation bar for type-safety
+// ✅ ADDED: A new Screen object for Chats.
 sealed class Screen(val route: String, val label: String, val iconResId: Int) {
     object Home : Screen("home", "Home", R.drawable.home)
+    object Chats : Screen("chats", "Chats", R.drawable.chat) // Ensure you have this drawable
     object Post : Screen("post", "Post", R.drawable.post)
     object MyItems : Screen("myitems", "My Items", R.drawable.items)
     object Profile : Screen("profile", "Profile", R.drawable.profile1)
 }
 
-// ✅ This is now the fully functional BottomNavigationBar composable
 @Composable
 fun BottomNavigationBar(navController: NavController) {
+    // ✅ ADDED: The new Chats screen to the list of items to display.
     val navItems = listOf(
         Screen.Home,
+        Screen.Chats,
         Screen.Post,
         Screen.MyItems,
         Screen.Profile
@@ -37,7 +39,8 @@ fun BottomNavigationBar(navController: NavController) {
         val currentDestination = navBackStackEntry?.destination
 
         navItems.forEach { screen ->
-            val isSelected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
+            val isSelected = currentDestination?.hierarchy?.any { it.route?.startsWith(screen.route) == true } == true
+
             NavigationBarItem(
                 selected = isSelected,
                 onClick = {
@@ -53,7 +56,7 @@ fun BottomNavigationBar(navController: NavController) {
                     Icon(
                         painter = painterResource(id = screen.iconResId),
                         contentDescription = screen.label,
-                        modifier = Modifier.size(24.dp) // Ensures correct icon size
+                        modifier = Modifier.size(24.dp)
                     )
                 },
                 label = { Text(screen.label) },
