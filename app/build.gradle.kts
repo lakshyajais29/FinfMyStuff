@@ -16,6 +16,9 @@ android {
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // ✅ THIS LINE FIXES THE CRASH CAUSED BY VECTOR ASSETS
+        vectorDrawables.useSupportLibrary = true
     }
 
     buildTypes {

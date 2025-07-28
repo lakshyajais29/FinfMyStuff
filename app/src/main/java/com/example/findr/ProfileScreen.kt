@@ -8,7 +8,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,7 +25,7 @@ import com.google.firebase.auth.FirebaseAuth
 fun ProfileScreen() {
     val user = FirebaseAuth.getInstance().currentUser
     val email = user?.email ?: "Unknown User"
-    val name = user?.displayName ?: "Student" // Using displayName if available
+    val name = user?.displayName ?: "Student"
 
     Column(
         modifier = Modifier
@@ -37,9 +36,8 @@ fun ProfileScreen() {
     ) {
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Profile Picture Placeholder
         Image(
-            painter = painterResource(id = R.drawable.profile1), // Use a placeholder avatar
+            painter = painterResource(id = R.drawable.profile1),
             contentDescription = "Profile Picture",
             modifier = Modifier
                 .size(120.dp)
@@ -64,22 +62,20 @@ fun ProfileScreen() {
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Info Cards
         ProfileInfoCard(icon = Icons.Default.Email, text = "Email: $email")
 
-        Spacer(modifier = Modifier.weight(1f)) // Pushes button to the bottom
+        Spacer(modifier = Modifier.weight(1f))
 
-        // Logout Button
         Button(
+            // ✅ CORRECTED: This simply signs the user out. The AuthStateListener will handle navigation.
             onClick = {
                 FirebaseAuth.getInstance().signOut()
-                // The navigation logic in AppNavigation will handle redirecting to the sign-in screen
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)) // A nice red
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
         ) {
             Icon(Icons.Default.ExitToApp, contentDescription = "Logout Icon", tint = Color.White)
             Spacer(modifier = Modifier.width(8.dp))
@@ -88,6 +84,7 @@ fun ProfileScreen() {
     }
 }
 
+// ... ProfileInfoCard and Preview remain the same ...
 @Composable
 fun ProfileInfoCard(icon: ImageVector, text: String) {
     Card(

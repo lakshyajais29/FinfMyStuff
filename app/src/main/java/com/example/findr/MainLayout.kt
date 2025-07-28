@@ -10,6 +10,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 
+
 @Composable
 fun MainLayout() {
     val navController = rememberNavController()
@@ -62,7 +63,7 @@ fun MainLayout() {
                 ItemDetailsScreen(postId = postId, navController = navController)
             }
 
-            // Chat screen
+
             composable(
                 route = "chat/{chatId}",
                 arguments = listOf(navArgument("chatId") { type = NavType.StringType })
