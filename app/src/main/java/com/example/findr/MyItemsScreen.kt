@@ -2,6 +2,7 @@ package com.example.findr
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -11,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalInspectionMode
@@ -18,14 +20,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.concurrent.TimeUnit
 
-
+// ✅ UPDATED: The screen now accepts a NavController
 @Composable
-fun MyItemsScreen() {
+fun MyItemsScreen(navController: NavController) {
     val isInPreview = LocalInspectionMode.current
     var items by remember { mutableStateOf(listOf<PostItem>()) }
     var isLoading by remember { mutableStateOf(true) }
@@ -87,7 +91,8 @@ fun MyItemsScreen() {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(items) { item ->
-                    MyItemCard(item = item)
+                    // ✅ Pass the NavController to each card
+                    MyItemCard(item = item, navController = navController)
                 }
             }
         }
@@ -95,7 +100,7 @@ fun MyItemsScreen() {
 }
 
 @Composable
-fun MyItemCard(item: PostItem) {
+fun MyItemCard(item: PostItem, navController: NavController) {
     val timeAgo = remember(item.timestamp) {
         val now = System.currentTimeMillis()
         val diff = now - item.timestamp
@@ -111,7 +116,11 @@ fun MyItemCard(item: PostItem) {
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(2.dp)
+        elevation = CardDefaults.cardElevation(2.dp),
+        // ✅ ADDED: The clickable modifier to navigate to the details screen
+        modifier = Modifier.clickable {
+            navController.navigate("item_details/${item.id}")
+        }
     ) {
         Column {
             Image(
@@ -142,5 +151,6 @@ fun MyItemCard(item: PostItem) {
 @Preview(showBackground = true)
 @Composable
 fun MyItemsScreenPreview() {
-    MyItemsScreen()
+    // Pass a dummy NavController for the preview
+    MyItemsScreen(navController = rememberNavController())
 }

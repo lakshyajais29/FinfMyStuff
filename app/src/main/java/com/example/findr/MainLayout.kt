@@ -10,7 +10,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 
-
 @Composable
 fun MainLayout() {
     val navController = rememberNavController()
@@ -25,15 +24,14 @@ fun MainLayout() {
             startDestination = Screen.Home.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            // Your existing screens
             composable(Screen.Home.route) { HomeScreen(navController = navController) }
-            composable(Screen.MyItems.route) { MyItemsScreen() }
-            composable(Screen.Profile.route) { ProfileScreen() }
 
-            // ✅ ADDED: New route for the Conversations screen, linked to the Chats icon
+            // ✅ CORRECTED: Pass the navController to MyItemsScreen
+            composable(Screen.MyItems.route) { MyItemsScreen(navController = navController) }
+
+            composable(Screen.Profile.route) { ProfileScreen() }
             composable(Screen.Chats.route) { ConversationsScreen(navController = navController) }
 
-            // Post screen with optional argument
             composable(
                 route = "${Screen.Post.route}?itemType={itemType}",
                 arguments = listOf(
@@ -54,7 +52,6 @@ fun MainLayout() {
                 )
             }
 
-            // Item Details screen
             composable(
                 route = "item_details/{postId}",
                 arguments = listOf(navArgument("postId") { type = NavType.StringType })
@@ -62,7 +59,6 @@ fun MainLayout() {
                 val postId = backStackEntry.arguments?.getString("postId") ?: ""
                 ItemDetailsScreen(postId = postId, navController = navController)
             }
-
 
             composable(
                 route = "chat/{chatId}",

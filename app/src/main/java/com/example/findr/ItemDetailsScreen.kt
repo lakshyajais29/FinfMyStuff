@@ -39,20 +39,23 @@ fun ItemDetailsScreen(
     var post by remember { mutableStateOf<DetailedPostItem?>(null) }
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
 
+    // Fetch the specific post from Firestore
     LaunchedEffect(postId) {
-        FirebaseFirestore.getInstance().collection("posts").document(postId)
-            .get()
-            .addOnSuccessListener { document ->
-                if (document != null) {
-                    post = DetailedPostItem(
-                        id = document.id,
-                        imageUrl = document.getString("imageUrl") ?: "",
-                        description = document.getString("description") ?: "",
-                        timestamp = document.getTimestamp("timestamp")?.toDate()?.time ?: 0L,
-                        postedBy = document.getString("userId") ?: "" // Fetch the poster's user ID
-                    )
+        if (postId.isNotBlank()) {
+            FirebaseFirestore.getInstance().collection("posts").document(postId)
+                .get()
+                .addOnSuccessListener { document ->
+                    if (document != null && document.exists()) {
+                        post = DetailedPostItem(
+                            id = document.id,
+                            imageUrl = document.getString("imageUrl") ?: "",
+                            description = document.getString("description") ?: "No Description",
+                            timestamp = document.getTimestamp("timestamp")?.toDate()?.time ?: 0L,
+                            postedBy = document.getString("userId") ?: "" // Fetch the poster's user ID
+                        )
+                    }
                 }
-            }
+        }
     }
 
     Scaffold(
@@ -73,11 +76,13 @@ fun ItemDetailsScreen(
                 .fillMaxSize()
                 .background(Color(0xFFF8F9FA))
         ) {
+            // ✅ YEH CODE DATA LOAD HONE TAK LOADING SPINNER DIKHAYEGA
             if (post == null) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
             } else {
+                // Jab data aa jayega, toh yeh UI dikhega
                 post?.let { item ->
                     Image(
                         painter = rememberAsyncImagePainter(item.imageUrl),
@@ -94,16 +99,17 @@ fun ItemDetailsScreen(
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(modifier = Modifier.height(16.dp))
+                        // Aap yahan aur bhi details (location, date, etc.) daal sakte hain
                     }
 
                     Spacer(modifier = Modifier.weight(1f))
 
-                    // Only show the button if the viewer is not the one who posted it
+                    // ✅ LOGIC THEEK KIYA GAYA: Button tabhi dikhega jab aap item ke owner nahi hain
                     if (item.postedBy.isNotBlank() && item.postedBy != currentUserId) {
                         Button(
                             onClick = {
                                 if (currentUserId != null) {
-                                    // ✅ CORRECTED: Removed the backslashes before the underscores
+                                    // Unique aur predictable chat ID banayein
                                     val posterId = item.postedBy
                                     val chatId = if (currentUserId < posterId) {
                                         "${currentUserId}_${posterId}_$postId"
@@ -111,14 +117,14 @@ fun ItemDetailsScreen(
                                         "${posterId}_${currentUserId}_$postId"
                                     }
 
-                                    // Create a session in Realtime DB so it appears in chat lists
+                                    // Realtime DB mein session banayein taaki chat list mein dikhe
                                     createChatSession(
                                         chatId = chatId,
                                         postItem = item,
                                         participants = listOf(currentUserId, posterId)
                                     )
 
-                                    // Navigate to the chat screen
+                                    // Chat screen par navigate karein
                                     navController.navigate("chat/$chatId")
                                 }
                             },
