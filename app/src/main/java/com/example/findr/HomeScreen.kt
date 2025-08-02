@@ -42,10 +42,11 @@ fun HomeScreen(navController: NavController? = null) {
     var posts by remember { mutableStateOf(listOf<PostItem>()) }
     var searchText by remember { mutableStateOf("") }
 
+    // ✅ FIXED: Switched to a real-time listener for seamless cross-device updates.
     DisposableEffect(Unit) {
         val db = FirebaseFirestore.getInstance()
+        // This listener will automatically update 'posts' whenever the data changes in Firestore.
         val listenerRegistration: ListenerRegistration = db.collection("posts")
-            // ✅ CORRECTED: This now uses Query.Direction from com.google.firebase.firestore
             .orderBy("timestamp", Query.Direction.DESCENDING)
             .limit(10)
             .addSnapshotListener { result, error ->
@@ -59,12 +60,14 @@ fun HomeScreen(navController: NavController? = null) {
                         val url = doc.getString("imageUrl") ?: return@mapNotNull null
                         val desc = doc.getString("description") ?: "No description"
                         val timestamp = doc.getTimestamp("timestamp")?.toDate()?.time ?: 0L
+                        // Use the document ID as the PostItem ID
                         PostItem(doc.id, url, desc, timestamp)
                     }
                     posts = list
                 }
             }
 
+        // This is crucial: it removes the listener when the screen is closed to prevent memory leaks.
         onDispose {
             listenerRegistration.remove()
         }
@@ -148,8 +151,6 @@ fun HomeScreen(navController: NavController? = null) {
         }
     }
 }
-
-// ... PostCard and Preview composables remain the same ...
 
 @Composable
 fun PostCard(item: PostItem, navController: NavController?) {
