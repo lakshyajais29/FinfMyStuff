@@ -2,7 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("com.google.gms.google-services") // Correct usage
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -16,8 +16,6 @@ android {
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        // ✅ THIS LINE FIXES THE CRASH CAUSED BY VECTOR ASSETS
         vectorDrawables.useSupportLibrary = true
     }
 
@@ -46,33 +44,29 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
+
+    // This BoM manages all your compose library versions
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-
-    //implementation("io.coil-kt:coil-compose:2.5.0")
-    implementation("com.google.accompanist:accompanist-permissions:0.32.0")
-    implementation("androidx.activity:activity-compose:1.7.2")
-
-
-    // ✅ Firebase BoM - only once
-    implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
-
-    // ✅ Firebase SDKs
-    implementation("com.google.firebase:firebase-auth-ktx")
-    implementation("com.google.firebase:firebase-firestore-ktx")
-    implementation("com.google.firebase:firebase-database-ktx")
-    implementation("com.google.firebase:firebase-storage-ktx")
-    implementation("com.google.firebase:firebase-analytics-ktx") // ✅ Correct
-
-    // 🔧 Others
-    implementation("io.coil-kt:coil-compose:2.5.0")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
-    implementation(libs.play.services.cast.tv)
     implementation(libs.androidx.foundation.layout.android)
+
+    // This BoM manages all your Firebase library versions
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics.ktx)
+    implementation(libs.firebase.auth.ktx)
+    implementation(libs.firebase.database.ktx)
+    implementation(libs.firebase.firestore.ktx)
+    implementation(libs.firebase.storage.ktx)
+
+    // Other Libraries
+    implementation(libs.coil.compose)
+    implementation(libs.cloudinary.android)
+    implementation(libs.okhttp)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.material.icons.extended)
 
     // Testing
     testImplementation(libs.junit)
@@ -82,11 +76,4 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-
-    implementation("androidx.navigation:navigation-compose:2.7.5")
-
-    implementation ("com.cloudinary:cloudinary-android:2.2.0")
-
-    implementation("androidx.compose.material:material-icons-extended:1.6.7")
-
 }

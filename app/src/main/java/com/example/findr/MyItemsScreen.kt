@@ -27,7 +27,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.concurrent.TimeUnit
 
-// ✅ UPDATED: The screen now accepts a NavController
+
 @Composable
 fun MyItemsScreen(navController: NavController) {
     val isInPreview = LocalInspectionMode.current

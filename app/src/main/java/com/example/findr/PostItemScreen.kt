@@ -1,8 +1,10 @@
 package com.example.findr
 
 import android.Manifest
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -26,18 +28,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import coil.compose.rememberAsyncImagePainter
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.isGranted
-import com.google.accompanist.permissions.rememberPermissionState
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PostItemScreen(
     itemType: String,
@@ -50,17 +50,12 @@ fun PostItemScreen(
     var isUploading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // ✅ State for the new Bottom Sheet
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
 
-    // ✅ State and launcher for Camera Permission
-    val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
-
-    // URI for the camera to save the photo
     val cameraImageUri: Uri = remember {
         FileProvider.getUriForFile(
             context,
@@ -69,7 +64,6 @@ fun PostItemScreen(
         )
     }
 
-    // Launcher for picking an image from the gallery
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
@@ -78,7 +72,6 @@ fun PostItemScreen(
         }
     }
 
-    // Launcher for taking a picture with the camera
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
@@ -87,7 +80,16 @@ fun PostItemScreen(
         }
     }
 
-    // --- UI ---
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            cameraLauncher.launch(cameraImageUri)
+        } else {
+            Toast.makeText(context, "Camera permission is required to take photos.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -105,7 +107,6 @@ fun PostItemScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Image Picker - Now triggers the bottom sheet
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -113,7 +114,7 @@ fun PostItemScreen(
                 .clip(RoundedCornerShape(12.dp))
                 .background(Color.White)
                 .border(1.dp, Color.LightGray, RoundedCornerShape(12.dp))
-                .clickable { showBottomSheet = true }, // Show bottom sheet
+                .clickable { showBottomSheet = true },
             contentAlignment = Alignment.Center
         ) {
             if (imageUri != null) {
@@ -156,7 +157,6 @@ fun PostItemScreen(
             shape = RoundedCornerShape(12.dp)
         )
 
-        // Display error message if upload fails
         errorMessage?.let {
             Text(
                 text = "Upload Failed: $it",
@@ -165,11 +165,11 @@ fun PostItemScreen(
             )
         }
 
-        Spacer(modifier = Modifier.weight(1f)) // Pushes button to the bottom
+        Spacer(modifier = Modifier.weight(1f))
 
         Button(
             onClick = {
-                errorMessage = null // Clear previous errors
+                errorMessage = null
                 if (imageUri != null && description.isNotBlank() && location.isNotBlank()) {
                     isUploading = true
                     CloudinaryUtil.uploadImage(
@@ -209,7 +209,6 @@ fun PostItemScreen(
         }
     }
 
-    // ✅ ADDED: The Modal Bottom Sheet for Camera/Gallery choice
     if (showBottomSheet) {
         ModalBottomSheet(
             onDismissRequest = { showBottomSheet = false },
@@ -223,11 +222,13 @@ fun PostItemScreen(
                     modifier = Modifier.clickable {
                         scope.launch { sheetState.hide() }.invokeOnCompletion {
                             showBottomSheet = false
-                            // Request permission and launch camera
-                            if (cameraPermissionState.status.isGranted) {
-                                cameraLauncher.launch(cameraImageUri)
-                            } else {
-                                cameraPermissionState.launchPermissionRequest()
+                            when (PackageManager.PERMISSION_GRANTED) {
+                                ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
+                                    cameraLauncher.launch(cameraImageUri)
+                                }
+                                else -> {
+                                    permissionLauncher.launch(Manifest.permission.CAMERA)
+                                }
                             }
                         }
                     }
@@ -282,7 +283,6 @@ fun ItemTypeToggle(selectedType: String, onTypeSelected: (String) -> Unit) {
     }
 }
 
-// Updated Firestore function to report success/failure
 fun savePostToFirestore(imageUrl: String, description: String, itemType: String, location: String, onComplete: (Boolean) -> Unit) {
     val user = FirebaseAuth.getInstance().currentUser ?: return onComplete(false)
     val db = FirebaseFirestore.getInstance()
@@ -304,7 +304,6 @@ fun savePostToFirestore(imageUrl: String, description: String, itemType: String,
             onComplete(false)
         }
 }
-
 
 @Preview(showBackground = true)
 @Composable

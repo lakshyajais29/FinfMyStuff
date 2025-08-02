@@ -1,5 +1,6 @@
 package com.example.findr
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,6 +26,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import java.util.concurrent.TimeUnit
 
@@ -40,23 +42,32 @@ fun HomeScreen(navController: NavController? = null) {
     var posts by remember { mutableStateOf(listOf<PostItem>()) }
     var searchText by remember { mutableStateOf("") }
 
-    // Fetch posts from Firebase
-    LaunchedEffect(Unit) {
+    DisposableEffect(Unit) {
         val db = FirebaseFirestore.getInstance()
-        db.collection("posts")
+        val listenerRegistration: ListenerRegistration = db.collection("posts")
+            // ✅ CORRECTED: This now uses Query.Direction from com.google.firebase.firestore
             .orderBy("timestamp", Query.Direction.DESCENDING)
             .limit(10)
-            .get()
-            .addOnSuccessListener { result ->
-                val list = result.documents.mapNotNull { doc ->
-                    val url = doc.getString("imageUrl") ?: return@mapNotNull null
-                    val desc = doc.getString("description") ?: "No description"
-                    val timestamp = doc.getTimestamp("timestamp")?.toDate()?.time ?: 0L
-                    // Use the document ID as the PostItem ID
-                    PostItem(doc.id, url, desc, timestamp)
+            .addSnapshotListener { result, error ->
+                if (error != null) {
+                    Log.e("HomeScreen", "Listen failed: ${error.message}")
+                    return@addSnapshotListener
                 }
-                posts = list
+
+                if (result != null) {
+                    val list = result.documents.mapNotNull { doc ->
+                        val url = doc.getString("imageUrl") ?: return@mapNotNull null
+                        val desc = doc.getString("description") ?: "No description"
+                        val timestamp = doc.getTimestamp("timestamp")?.toDate()?.time ?: 0L
+                        PostItem(doc.id, url, desc, timestamp)
+                    }
+                    posts = list
+                }
             }
+
+        onDispose {
+            listenerRegistration.remove()
+        }
     }
 
     Column(
@@ -65,7 +76,6 @@ fun HomeScreen(navController: NavController? = null) {
             .background(Color(0xFFF8F9FA))
             .padding(horizontal = 16.dp)
     ) {
-        // ... (Header, Search, and Action Buttons remain the same)
         Spacer(modifier = Modifier.height(16.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -126,7 +136,7 @@ fun HomeScreen(navController: NavController? = null) {
         )
         Spacer(modifier = Modifier.height(12.dp))
 
-        // ✅ CORRECTED: Pass the navController to each PostCard
+
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -139,7 +149,8 @@ fun HomeScreen(navController: NavController? = null) {
     }
 }
 
-// ✅ CORRECTED: This function is now fully updated
+// ... PostCard and Preview composables remain the same ...
+
 @Composable
 fun PostCard(item: PostItem, navController: NavController?) {
     val timeAgo = remember(item.timestamp) {
@@ -157,7 +168,6 @@ fun PostCard(item: PostItem, navController: NavController?) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            // Navigate to the item details screen, passing the post's unique ID
             .clickable { navController?.navigate("item_details/${item.id}") }
     ) {
         Image(

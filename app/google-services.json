@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "329023677370",
+    "firebase_url": "https://findr-a905e-default-rtdb.firebaseio.com",
     "project_id": "findr-a905e",
     "storage_bucket": "findr-a905e.firebasestorage.app"
   },
