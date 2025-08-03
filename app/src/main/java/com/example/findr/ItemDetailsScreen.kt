@@ -3,7 +3,9 @@ package com.example.findr
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Chat
@@ -70,74 +72,84 @@ fun ItemDetailsScreen(
             )
         }
     ) { paddingValues ->
-        Column(
+        // The main content area
+        Box(
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize()
-                .background(Color(0xFFF8F9FA))
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            // ✅ YEH CODE DATA LOAD HONE TAK LOADING SPINNER DIKHAYEGA
             if (post == null) {
+                // Show a loading indicator while data is being fetched
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
             } else {
-                // Jab data aa jayega, toh yeh UI dikhega
                 post?.let { item ->
-                    Image(
-                        painter = rememberAsyncImagePainter(item.imageUrl),
-                        contentDescription = item.description,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(300.dp),
-                        contentScale = ContentScale.Crop
-                    )
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = item.description,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        // Aap yahan aur bhi details (location, date, etc.) daal sakte hain
-                    }
-
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    // ✅ LOGIC THEEK KIYA GAYA: Button tabhi dikhega jab aap item ke owner nahi hain
-                    if (item.postedBy.isNotBlank() && item.postedBy != currentUserId) {
-                        Button(
-                            onClick = {
-                                if (currentUserId != null) {
-                                    // Unique aur predictable chat ID banayein
-                                    val posterId = item.postedBy
-                                    val chatId = if (currentUserId < posterId) {
-                                        "${currentUserId}_${posterId}_$postId"
-                                    } else {
-                                        "${posterId}_${currentUserId}_$postId"
-                                    }
-
-                                    // Realtime DB mein session banayein taaki chat list mein dikhe
-                                    createChatSession(
-                                        chatId = chatId,
-                                        postItem = item,
-                                        participants = listOf(currentUserId, posterId)
-                                    )
-
-                                    // Chat screen par navigate karein
-                                    navController.navigate("chat/$chatId")
-                                }
-                            },
+                    // ✅ WRAPPED content in a scrollable Column
+                    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                        Image(
+                            painter = rememberAsyncImagePainter(item.imageUrl),
+                            contentDescription = item.description,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp)
-                                .height(52.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1A3C73))
-                        ) {
-                            Icon(Icons.Default.Chat, contentDescription = "Chat", tint = Color.White)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Connect with Owner", color = Color.White)
+                                .height(300.dp),
+                            contentScale = ContentScale.Crop
+                        )
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = item.description,
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                                // ✅ CHANGED: Use the theme's text color
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            // You can add other details here
+                        }
+                    }
+
+                    // This Box places the button at the bottom of the screen
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+                        if (item.postedBy.isNotBlank() && item.postedBy != currentUserId) {
+                            Button(
+                                onClick = {
+                                    if (currentUserId != null) {
+                                        val posterId = item.postedBy
+                                        val chatId = if (currentUserId < posterId) {
+                                            "${currentUserId}_${posterId}_$postId"
+                                        } else {
+                                            "${posterId}_${currentUserId}_$postId"
+                                        }
+                                        createChatSession(
+                                            chatId = chatId,
+                                            postItem = item,
+                                            participants = listOf(currentUserId, posterId)
+                                        )
+                                        navController.navigate("chat/$chatId")
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                                    .height(52.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                // ✅ CHANGED: Use the theme's primary color
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                            ) {
+                                Icon(
+                                    Icons.Default.Chat,
+                                    contentDescription = "Chat",
+                                    // ✅ CHANGED: Use the theme's text color for the icon
+                                    tint = MaterialTheme.colorScheme.onPrimary
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    "Connect with Owner",
+                                    // ✅ CHANGED: Use the theme's text color for the button
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                            }
                         }
                     }
                 }
@@ -145,6 +157,8 @@ fun ItemDetailsScreen(
         }
     }
 }
+
+
 
 // Helper function to create the chat session metadata in Realtime Database
 fun createChatSession(chatId: String, postItem: DetailedPostItem, participants: List<String>) {

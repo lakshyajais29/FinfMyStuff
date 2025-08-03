@@ -19,12 +19,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.findr.ui.theme.FindrTheme
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,6 +66,8 @@ fun ChatScreen(
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize()
+                // ✅ CHANGED: Use the theme's background color
+                .background(MaterialTheme.colorScheme.background)
         ) {
             LazyColumn(
                 modifier = Modifier
@@ -101,9 +103,11 @@ fun ChatScreen(
                             text = ""
                         }
                     },
+                    // ✅ CHANGED: Use the theme's primary color
                     modifier = Modifier.background(MaterialTheme.colorScheme.primary, CircleShape)
                 ) {
-                    Icon(Icons.Default.Send, contentDescription = "Send", tint = Color.White)
+                    // ✅ CHANGED: Use the theme's text color for icons on a primary background
+                    Icon(Icons.Default.Send, contentDescription = "Send", tint = MaterialTheme.colorScheme.onPrimary)
                 }
             }
         }
@@ -128,12 +132,14 @@ fun MessageBubble(message: ChatMessage, isCurrentUser: Boolean) {
                         bottomEnd = if (isCurrentUser) 0.dp else 16.dp
                     )
                 )
-                .background(if (isCurrentUser) MaterialTheme.colorScheme.primary else Color.LightGray)
+                // ✅ CHANGED: Use theme colors for the message bubbles
+                .background(if (isCurrentUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
                 .padding(horizontal = 16.dp, vertical = 10.dp)
         ) {
             Text(
                 text = message.text,
-                color = if (isCurrentUser) Color.White else Color.Black
+                // ✅ CHANGED: Use theme colors for the text inside the bubbles
+                color = if (isCurrentUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
             )
         }
     }
@@ -142,5 +148,7 @@ fun MessageBubble(message: ChatMessage, isCurrentUser: Boolean) {
 @Preview(showBackground = true)
 @Composable
 fun ChatScreenPreview() {
-    ChatScreen(chatId = "preview_chat_id", navController = rememberNavController())
+    FindrTheme { // Wrap preview in your app's theme to see it correctly
+        ChatScreen(chatId = "preview_chat_id", navController = rememberNavController())
+    }
 }

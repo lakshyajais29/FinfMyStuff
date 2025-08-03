@@ -1,19 +1,21 @@
 package com.example.findr
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.*
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.unit.*
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.example.findr.ui.theme.FindrTheme
 import com.google.firebase.auth.FirebaseAuth
-
 
 fun signInUser(
     email: String,
@@ -24,19 +26,19 @@ fun signInUser(
     FirebaseAuth.getInstance()
         .signInWithEmailAndPassword(email.trim(), password.trim())
         .addOnSuccessListener {
-            val user = FirebaseAuth.getInstance().currentUser
-            if (user != null && user.email != null) {
-                onSuccess()
-            } else {
-                onError("Something went wrong. Please try again.")
-            }
+            onSuccess()
         }
         .addOnFailureListener { e ->
             onError(e.message ?: "Login failed")
         }
 }
 
-// ✅ Composable UI
+fun sendPasswordReset(email: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+    FirebaseAuth.getInstance().sendPasswordResetEmail(email)
+        .addOnSuccessListener { onSuccess() }
+        .addOnFailureListener { e -> onError(e.message ?: "Failed to send reset email.") }
+}
+
 @Composable
 fun SignInScreen(
     onNavigateToSignUp: () -> Unit,
@@ -45,15 +47,16 @@ fun SignInScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
 
     Surface(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp),
-        color = Color(0xFFF5F9FF)
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
     ) {
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp),
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -64,7 +67,8 @@ fun SignInScreen(
                     painter = painterResource(id = R.drawable.findmystuff),
                     contentDescription = "Campus Logo",
                     modifier = Modifier
-                        .height(80.dp)
+                        .fillMaxWidth(0.8f)
+                        .aspectRatio(1200f / 500f)
                         .padding(bottom = 24.dp)
                 )
 
@@ -72,7 +76,8 @@ fun SignInScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(6.dp)
+                    elevation = CardDefaults.cardElevation(6.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column(
                         modifier = Modifier.padding(24.dp),
@@ -81,13 +86,14 @@ fun SignInScreen(
                         Text(
                             "Welcome Back!",
                             style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                            modifier = Modifier.padding(bottom = 4.dp)
+                            modifier = Modifier.padding(bottom = 4.dp),
+                            color = MaterialTheme.colorScheme.onSurface
                         )
 
                         Text(
                             "Sign in with your college email to continue.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
 
@@ -111,12 +117,37 @@ fun SignInScreen(
                             modifier = Modifier.fillMaxWidth()
                         )
 
-                        // Error message
-                        error?.let {
-                            Text(it, color = Color.Red, modifier = Modifier.padding(top = 8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(
+                                onClick = {
+                                    val trimmedEmail = email.trim()
+                                    if (trimmedEmail.isNotEmpty()) {
+                                        error = null // Clear previous errors
+                                        sendPasswordReset(
+                                            email = trimmedEmail,
+                                            onSuccess = {
+                                                Toast.makeText(context, "Password reset link sent to $trimmedEmail", Toast.LENGTH_LONG).show()
+                                            },
+                                            onError = { errorMsg -> error = errorMsg }
+                                        )
+                                    } else {
+                                        error = "Please enter your email first."
+                                    }
+                                }
+                            ) {
+                                Text("Forgot Password?")
+                            }
                         }
 
-                        Spacer(modifier = Modifier.height(20.dp))
+                        // Error message
+                        error?.let {
+                            Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
 
                         // Sign In Button
                         Button(
@@ -129,11 +160,9 @@ fun SignInScreen(
                                     trimmedEmail.isEmpty() || trimmedPassword.isEmpty() -> {
                                         error = "Please fill in all fields."
                                     }
-
                                     !collegeEmailRegex.matches(trimmedEmail) -> {
                                         error = "Only @kiet.edu emails are allowed!"
                                     }
-
                                     else -> {
                                         error = null
                                         signInUser(
@@ -150,8 +179,8 @@ fun SignInScreen(
                                 .height(52.dp),
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFFFA500),
-                                contentColor = Color.Black
+                                containerColor = MaterialTheme.colorScheme.secondary,
+                                contentColor = MaterialTheme.colorScheme.onSecondary
                             )
                         ) {
                             Text("Sign In", style = MaterialTheme.typography.titleMedium)
@@ -161,7 +190,7 @@ fun SignInScreen(
 
                         // Navigate to Sign Up
                         TextButton(onClick = onNavigateToSignUp) {
-                            Text("Don't have an account? Sign Up", color = Color(0xFF1A3C73))
+                            Text("Don't have an account? Sign Up", color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
@@ -170,12 +199,13 @@ fun SignInScreen(
     }
 }
 
-// Preview
 @Preview(showBackground = true)
 @Composable
 fun SignInScreenPreview() {
-    SignInScreen(
-        onNavigateToSignUp = {},
-        onLoginSuccess = {}
-    )
+    FindrTheme {
+        SignInScreen(
+            onNavigateToSignUp = {},
+            onLoginSuccess = {}
+        )
+    }
 }

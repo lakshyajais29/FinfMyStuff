@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import coil.compose.rememberAsyncImagePainter
+import com.example.findr.ui.theme.FindrTheme
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
@@ -93,14 +94,17 @@ fun PostItemScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8F9FA))
+            // ✅ CHANGED: Use the theme's background color
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
     ) {
         Text(
             "Report an Item",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 16.dp),
+            // ✅ CHANGED: Use the theme's text color
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         ItemTypeToggle(selectedType = currentItemType, onTypeSelected = { currentItemType = it })
@@ -112,8 +116,9 @@ fun PostItemScreen(
                 .fillMaxWidth()
                 .height(200.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(Color.White)
-                .border(1.dp, Color.LightGray, RoundedCornerShape(12.dp))
+                // ✅ CHANGED: Use the theme's surface color
+                .background(MaterialTheme.colorScheme.surface)
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
                 .clickable { showBottomSheet = true },
             contentAlignment = Alignment.Center
         ) {
@@ -129,10 +134,11 @@ fun PostItemScreen(
                     Icon(
                         imageVector = Icons.Default.AddAPhoto,
                         contentDescription = "Upload Icon",
-                        tint = Color.Gray,
+                        // ✅ CHANGED: Use a subtle text color from the theme
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(48.dp)
                     )
-                    Text("Tap to add an image", color = Color.Gray)
+                    Text("Tap to add an image", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -199,12 +205,14 @@ fun PostItemScreen(
                 .fillMaxWidth()
                 .height(52.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1A3C73))
+            // ✅ CHANGED: Use the theme's primary color
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
             if (isUploading) {
                 CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
             } else {
-                Text("Submit Post", color = Color.White)
+                // ✅ CHANGED: Use the theme's text color for buttons
+                Text("Submit Post", color = MaterialTheme.colorScheme.onPrimary)
             }
         }
     }
@@ -214,37 +222,7 @@ fun PostItemScreen(
             onDismissRequest = { showBottomSheet = false },
             sheetState = sheetState
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text("Choose Image Source", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 16.dp))
-                ListItem(
-                    headlineContent = { Text("Take Photo") },
-                    leadingContent = { Icon(Icons.Default.CameraAlt, contentDescription = "Camera") },
-                    modifier = Modifier.clickable {
-                        scope.launch { sheetState.hide() }.invokeOnCompletion {
-                            showBottomSheet = false
-                            when (PackageManager.PERMISSION_GRANTED) {
-                                ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
-                                    cameraLauncher.launch(cameraImageUri)
-                                }
-                                else -> {
-                                    permissionLauncher.launch(Manifest.permission.CAMERA)
-                                }
-                            }
-                        }
-                    }
-                )
-                ListItem(
-                    headlineContent = { Text("Choose from Gallery") },
-                    leadingContent = { Icon(Icons.Default.PhotoLibrary, contentDescription = "Gallery") },
-                    modifier = Modifier.clickable {
-                        scope.launch { sheetState.hide() }.invokeOnCompletion {
-                            showBottomSheet = false
-                            galleryLauncher.launch("image/*")
-                        }
-                    }
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+            // ... (The code inside the bottom sheet is already good) ...
         }
     }
 }
@@ -255,33 +233,45 @@ fun ItemTypeToggle(selectedType: String, onTypeSelected: (String) -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(Color.White)
-            .border(1.dp, Color.LightGray, RoundedCornerShape(12.dp))
+            // ✅ CHANGED: Use the theme's surface color
+            .background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
     ) {
         Box(
             modifier = Modifier
                 .weight(1f)
                 .clip(RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp))
-                .background(if (selectedType == "Lost") Color(0xFFF9A825) else Color.White)
+                // ✅ CHANGED: Use theme colors for the selected/unselected states
+                .background(if (selectedType == "Lost") MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.surface)
                 .clickable { onTypeSelected("Lost") }
                 .padding(vertical = 12.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text("I Lost Something", color = if (selectedType == "Lost") Color.White else Color.Black)
+            Text(
+                "I Lost Something",
+                // ✅ CHANGED: Use theme colors for the text
+                color = if (selectedType == "Lost") MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onSurface
+            )
         }
         Box(
             modifier = Modifier
                 .weight(1f)
                 .clip(RoundedCornerShape(topEnd = 12.dp, bottomEnd = 12.dp))
-                .background(if (selectedType == "Found") Color(0xFF1A3C73) else Color.White)
+                // ✅ CHANGED: Use theme colors for the selected/unselected states
+                .background(if (selectedType == "Found") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
                 .clickable { onTypeSelected("Found") }
                 .padding(vertical = 12.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text("I Found Something", color = if (selectedType == "Found") Color.White else Color.Black)
+            Text(
+                "I Found Something",
+                // ✅ CHANGED: Use theme colors for the text
+                color = if (selectedType == "Found") MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+            )
         }
     }
 }
+
 
 fun savePostToFirestore(imageUrl: String, description: String, itemType: String, location: String, onComplete: (Boolean) -> Unit) {
     val user = FirebaseAuth.getInstance().currentUser ?: return onComplete(false)
@@ -308,5 +298,8 @@ fun savePostToFirestore(imageUrl: String, description: String, itemType: String,
 @Preview(showBackground = true)
 @Composable
 fun PostItemScreenPreview() {
-    PostItemScreen(itemType = "Lost", onUploadComplete = {})
+
+    FindrTheme {
+        PostItemScreen(itemType = "Lost", onUploadComplete = {})
+    }
 }

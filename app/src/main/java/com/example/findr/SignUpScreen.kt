@@ -6,17 +6,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Alignment
+import com.example.findr.ui.theme.FindrTheme
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
-// ✅ Function to handle Sign Up logic
+// Function to handle Sign Up logic (this part was correct)
 fun signUpUser(
     name: String,
     email: String,
@@ -48,7 +48,6 @@ fun signUpUser(
         .addOnFailureListener { e -> onError("Sign Up Failed: ${e.message}") }
 }
 
-// ✅ UI Composable
 @Composable
 fun SignUpScreen(
     onNavigateToSignIn: () -> Unit
@@ -60,42 +59,48 @@ fun SignUpScreen(
     var isLoading by remember { mutableStateOf(false) }
 
     Surface(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp),
-        color = Color(0xFFF5F9FF)
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
     ) {
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp),
             contentAlignment = Alignment.Center
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // ✅ Logo
+                // Logo
                 Image(
                     painter = painterResource(id = R.drawable.findmystuff),
                     contentDescription = "Campus Logo",
                     modifier = Modifier
-                        .height(80.dp)
+                        .fillMaxWidth(0.8f)
+                        .aspectRatio(1200f / 500f)
                         .padding(bottom = 24.dp)
                 )
 
-                // ✅ Card
+                // Sign Up Card
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(6.dp)
+                    elevation = CardDefaults.cardElevation(6.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column(
                         modifier = Modifier.padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("Create an Account", style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold))
+                        Text(
+                            "Create an Account",
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                         Text(
                             "Join the campus community and never lose an item again.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
 
@@ -127,35 +132,39 @@ fun SignUpScreen(
                         )
 
                         error?.let {
-                            Text(it, color = Color.Red, modifier = Modifier.padding(top = 8.dp))
+                            Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
                         }
 
                         Spacer(modifier = Modifier.height(20.dp))
 
                         Button(
+                            // ✅ FIXED: Added the missing onClick logic
                             onClick = {
                                 val kietEmailRegex = Regex("^[a-zA-Z0-9._%+-]+@kiet\\.edu$")
+                                val trimmedEmail = email.trim()
+                                val trimmedPassword = password.trim()
+                                val trimmedFullName = fullName.trim()
 
-                                if (!kietEmailRegex.matches(email)) {
+                                if (trimmedEmail.isBlank() || trimmedPassword.isBlank() || trimmedFullName.isBlank()) {
+                                    error = "Please fill in all fields."
+                                } else if (!kietEmailRegex.matches(trimmedEmail)) {
                                     error = "Only valid @kiet.edu emails are allowed!"
-                                } else if (email.isBlank() || password.isBlank() || fullName.isBlank()) {
-                                    error = "Please fill all fields."
-                                } else if (password.length < 6) {
+                                } else if (trimmedPassword.length < 6) {
                                     error = "Password must be at least 6 characters."
                                 } else {
                                     error = null
                                     isLoading = true
                                     signUpUser(
-                                        name = fullName,
-                                        email = email,
-                                        password = password,
+                                        name = trimmedFullName,
+                                        email = trimmedEmail,
+                                        password = trimmedPassword,
                                         onSuccess = {
                                             isLoading = false
-                                            onNavigateToSignIn() // 🔁 NOW this works perfectly
+                                            onNavigateToSignIn() // Navigate on success
                                         },
-                                        onError = {
+                                        onError = { errorMsg ->
                                             isLoading = false
-                                            error = it
+                                            error = errorMsg
                                         }
                                     )
                                 }
@@ -165,8 +174,8 @@ fun SignUpScreen(
                                 .height(52.dp),
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFFFA500),
-                                contentColor = Color.Black
+                                containerColor = MaterialTheme.colorScheme.secondary,
+                                contentColor = MaterialTheme.colorScheme.onSecondary
                             )
                         ) {
                             Text("Sign Up", style = MaterialTheme.typography.titleMedium)
@@ -174,14 +183,13 @@ fun SignUpScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        TextButton(onClick = { onNavigateToSignIn() }) {
-                            Text("Already have an account? Sign In", color = Color(0xFF1A3C73))
+                        TextButton(onClick = onNavigateToSignIn) {
+                            Text("Already have an account? Sign In", color = MaterialTheme.colorScheme.primary)
                         }
 
-                        // Optional loading state
                         if (isLoading) {
                             Spacer(modifier = Modifier.height(16.dp))
-                            CircularProgressIndicator(color = Color(0xFFFFA500))
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.secondary)
                         }
                     }
                 }
@@ -193,7 +201,7 @@ fun SignUpScreen(
 @Preview(showBackground = true)
 @Composable
 fun SignUpScreenPreview() {
-    SignUpScreen {
-        // Preview only — do nothing
+    FindrTheme {
+        SignUpScreen {}
     }
 }

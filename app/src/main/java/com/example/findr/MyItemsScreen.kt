@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
+import com.example.findr.ui.theme.FindrTheme
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.concurrent.TimeUnit
@@ -37,23 +38,27 @@ fun MyItemsScreen(navController: NavController) {
     if (!isInPreview) {
         val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
         LaunchedEffect(Unit) {
-            FirebaseFirestore.getInstance()
-                .collection("posts")
-                .whereEqualTo("userId", userId)
-                .get()
-                .addOnSuccessListener { snapshot ->
-                    val list = snapshot.documents.mapNotNull { doc ->
-                        val url = doc.getString("imageUrl") ?: return@mapNotNull null
-                        val desc = doc.getString("description") ?: "No description"
-                        val timestamp = doc.getTimestamp("timestamp")?.toDate()?.time ?: 0L
-                        PostItem(doc.id, url, desc, timestamp)
+            if (userId.isNotBlank()) {
+                FirebaseFirestore.getInstance()
+                    .collection("posts")
+                    .whereEqualTo("userId", userId)
+                    .get()
+                    .addOnSuccessListener { snapshot ->
+                        val list = snapshot.documents.mapNotNull { doc ->
+                            val url = doc.getString("imageUrl") ?: return@mapNotNull null
+                            val desc = doc.getString("description") ?: "No description"
+                            val timestamp = doc.getTimestamp("timestamp")?.toDate()?.time ?: 0L
+                            PostItem(doc.id, url, desc, timestamp)
+                        }
+                        items = list
+                        isLoading = false
                     }
-                    items = list
-                    isLoading = false
-                }
-                .addOnFailureListener {
-                    isLoading = false
-                }
+                    .addOnFailureListener {
+                        isLoading = false
+                    }
+            } else {
+                isLoading = false
+            }
         }
     } else {
         isLoading = false
@@ -62,14 +67,17 @@ fun MyItemsScreen(navController: NavController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8F9FA))
+            // ✅ CHANGED: Use the theme's background color
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
     ) {
         Text(
             "My Posted Items",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 16.dp),
+            // ✅ CHANGED: Use the theme's text color
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         if (isLoading) {
@@ -81,7 +89,8 @@ fun MyItemsScreen(navController: NavController) {
                 Text(
                     "You haven't posted any items yet.\nTap the 'Post' button to get started!",
                     textAlign = TextAlign.Center,
-                    color = Color.Gray
+                    // ✅ CHANGED: Use a subtle text color from the theme
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         } else {
@@ -91,7 +100,6 @@ fun MyItemsScreen(navController: NavController) {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(items) { item ->
-                    // ✅ Pass the NavController to each card
                     MyItemCard(item = item, navController = navController)
                 }
             }
@@ -115,9 +123,9 @@ fun MyItemCard(item: PostItem, navController: NavController) {
 
     Card(
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        // ✅ CHANGED: Use the theme's surface color for the card background
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(2.dp),
-        // ✅ ADDED: The clickable modifier to navigate to the details screen
         modifier = Modifier.clickable {
             navController.navigate("item_details/${item.id}")
         }
@@ -135,12 +143,15 @@ fun MyItemCard(item: PostItem, navController: NavController) {
                 Text(
                     text = item.description,
                     fontWeight = FontWeight.SemiBold,
-                    maxLines = 2
+                    maxLines = 2,
+                    // ✅ CHANGED: Use the theme's text color for surfaces
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = timeAgo,
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.Gray,
+                    // ✅ CHANGED: Use a subtle text color from the theme
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
@@ -151,6 +162,8 @@ fun MyItemCard(item: PostItem, navController: NavController) {
 @Preview(showBackground = true)
 @Composable
 fun MyItemsScreenPreview() {
-    // Pass a dummy NavController for the preview
-    MyItemsScreen(navController = rememberNavController())
+    // ✅ WRAPPED IN THEME: Allows you to preview dark mode correctly
+    FindrTheme {
+        MyItemsScreen(navController = rememberNavController())
+    }
 }

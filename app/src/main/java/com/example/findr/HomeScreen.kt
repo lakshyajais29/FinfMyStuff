@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
+import com.example.findr.ui.theme.FindrTheme
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
@@ -37,15 +38,18 @@ data class PostItem(
     val timestamp: Long = 0L
 )
 
+// ✅ UPDATED: The function now accepts both NavControllers
 @Composable
-fun HomeScreen(navController: NavController? = null) {
+fun HomeScreen(
+    navController: NavController?, // For navigating to full-screen pages (e.g., details)
+    innerNavController: NavController? // For navigating between bottom bar tabs (e.g., to Post)
+) {
     var posts by remember { mutableStateOf(listOf<PostItem>()) }
     var searchText by remember { mutableStateOf("") }
 
-    // ✅ FIXED: Switched to a real-time listener for seamless cross-device updates.
+    // This real-time listener is already correct.
     DisposableEffect(Unit) {
         val db = FirebaseFirestore.getInstance()
-        // This listener will automatically update 'posts' whenever the data changes in Firestore.
         val listenerRegistration: ListenerRegistration = db.collection("posts")
             .orderBy("timestamp", Query.Direction.DESCENDING)
             .limit(10)
@@ -60,14 +64,12 @@ fun HomeScreen(navController: NavController? = null) {
                         val url = doc.getString("imageUrl") ?: return@mapNotNull null
                         val desc = doc.getString("description") ?: "No description"
                         val timestamp = doc.getTimestamp("timestamp")?.toDate()?.time ?: 0L
-                        // Use the document ID as the PostItem ID
                         PostItem(doc.id, url, desc, timestamp)
                     }
                     posts = list
                 }
             }
 
-        // This is crucial: it removes the listener when the screen is closed to prevent memory leaks.
         onDispose {
             listenerRegistration.remove()
         }
@@ -76,7 +78,7 @@ fun HomeScreen(navController: NavController? = null) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8F9FA))
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 16.dp)
     ) {
         Spacer(modifier = Modifier.height(16.dp))
@@ -87,27 +89,26 @@ fun HomeScreen(navController: NavController? = null) {
             Icon(
                 painter = painterResource(id = R.drawable.leftarrow),
                 contentDescription = "Back",
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(24.dp),
+                tint = MaterialTheme.colorScheme.onBackground
             )
             Spacer(modifier = Modifier.width(12.dp))
             Image(
                 painter = painterResource(id = R.drawable.findmystuff),
                 contentDescription = "FindMyStuff Logo",
-                modifier = Modifier.height(30.dp)
+                modifier = Modifier
+                    .height(60.dp)
+                    .aspectRatio(1200f / 500f)
             )
         }
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(2.dp))
         OutlinedTextField(
             value = searchText,
             onValueChange = { searchText = it },
             placeholder = { Text("Search") },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search Icon") },
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                unfocusedBorderColor = Color.LightGray,
-                focusedBorderColor = Color(0xFF1A3C73)
-            )
+            shape = RoundedCornerShape(12.dp)
         )
         Spacer(modifier = Modifier.height(20.dp))
         Row(
@@ -115,27 +116,30 @@ fun HomeScreen(navController: NavController? = null) {
             modifier = Modifier.fillMaxWidth()
         ) {
             Button(
-                onClick = { navController?.navigate("${Screen.Post.route}?itemType=Lost") },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF9A825)),
+                // ✅ CORRECTED: Uses the innerNavController to navigate to another bottom bar screen
+                onClick = { innerNavController?.navigate("${Screen.Post.route}?itemType=Lost") },
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.weight(1f).height(48.dp)
             ) {
-                Text("I Lost Something", color = Color.White)
+                Text("I Lost Something", color = MaterialTheme.colorScheme.onSecondary)
             }
             Button(
-                onClick = { navController?.navigate("${Screen.Post.route}?itemType=Found") },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1A3C73)),
+                // ✅ CORRECTED: Uses the innerNavController to navigate to another bottom bar screen
+                onClick = { innerNavController?.navigate("${Screen.Post.route}?itemType=Found") },
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.weight(1f).height(48.dp)
             ) {
-                Text("I Found Something", color = Color.White)
+                Text("I Found Something", color = MaterialTheme.colorScheme.onPrimary)
             }
         }
         Spacer(modifier = Modifier.height(24.dp))
         Text(
             "Recently Posted Items",
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -146,6 +150,7 @@ fun HomeScreen(navController: NavController? = null) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(posts) { item ->
+                // This correctly uses the main navController to navigate to a full-screen page
                 PostCard(item = item, navController = navController)
             }
         }
@@ -166,32 +171,35 @@ fun PostCard(item: PostItem, navController: NavController?) {
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { navController?.navigate("item_details/${item.id}") }
+    Card(
+        modifier = Modifier.clickable { navController?.navigate("item_details/${item.id}") },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Image(
-            painter = rememberAsyncImagePainter(item.imageUrl),
-            contentDescription = "Item image",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f)
-                .clip(RoundedCornerShape(12.dp))
-        )
-        Text(
-            item.description,
-            maxLines = 2,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(top = 8.dp)
-        )
-        Text(
-            timeAgo,
-            color = Color.Gray,
-            style = MaterialTheme.typography.labelMedium
-        )
+        Column {
+            Image(
+                painter = rememberAsyncImagePainter(item.imageUrl),
+                contentDescription = "Item image",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+            )
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    item.description,
+                    maxLines = 2,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    timeAgo,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+        }
     }
 }
 
@@ -199,12 +207,15 @@ fun PostCard(item: PostItem, navController: NavController?) {
 @Preview(showBackground = true, widthDp = 360, heightDp = 640)
 @Composable
 fun HomeScreenPreview() {
-    val navController = rememberNavController()
-    Scaffold(
-        bottomBar = { BottomNavigationBar(navController = navController) }
-    ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding)) {
-            HomeScreen(navController = navController)
+    FindrTheme {
+        val navController = rememberNavController()
+        val innerNavController = rememberNavController() // Create dummy for preview
+        Scaffold(
+            bottomBar = { BottomNavigationBar(navController = innerNavController) }
+        ) { innerPadding ->
+            Box(modifier = Modifier.padding(innerPadding)) {
+                HomeScreen(navController = navController, innerNavController = innerNavController)
+            }
         }
     }
 }

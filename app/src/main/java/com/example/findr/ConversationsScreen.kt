@@ -16,10 +16,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
+import com.example.findr.ui.theme.FindrTheme
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 
@@ -27,20 +30,34 @@ import com.google.firebase.database.*
 fun ConversationsScreen(navController: NavController) {
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
     var conversations by remember { mutableStateOf<List<ChatSession>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
     val dbRef = FirebaseDatabase.getInstance().getReference("chats")
 
     // Listener for user's conversations
     DisposableEffect(currentUserId) {
-        val listener = dbRef.orderByChild("metadata/participants/0").equalTo(currentUserId)
-            .addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    val loadedConversations = snapshot.children.mapNotNull {
-                        it.child("metadata").getValue(ChatSession::class.java)
-                    }
-                    conversations = loadedConversations.sortedByDescending { it.lastMessageTimestamp }
+        if (currentUserId.isBlank()) {
+            isLoading = false
+            return@DisposableEffect onDispose {}
+        }
+
+        // ✅ CORRECTED: This query now fetches all chats and filters on the client side.
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val loadedConversations = snapshot.children.mapNotNull {
+                    it.child("metadata").getValue(ChatSession::class.java)
+                }.filter {
+                    // This finds all chats where the current user is a participant.
+                    it.participants.contains(currentUserId)
                 }
-                override fun onCancelled(error: DatabaseError) { /* Handle error */ }
-            })
+                conversations = loadedConversations.sortedByDescending { it.lastMessageTimestamp }
+                isLoading = false
+            }
+            override fun onCancelled(error: DatabaseError) {
+                isLoading = false
+                /* Handle error */
+            }
+        }
+        dbRef.addValueEventListener(listener)
 
         onDispose { dbRef.removeEventListener(listener) }
     }
@@ -48,18 +65,28 @@ fun ConversationsScreen(navController: NavController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8F9FA))
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
     ) {
         Text(
             "My Chats",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 16.dp),
+            color = MaterialTheme.colorScheme.onBackground
         )
-        if (conversations.isEmpty()) {
+
+        if (isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("You have no active chats.", color = Color.Gray)
+                CircularProgressIndicator()
+            }
+        } else if (conversations.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(
+                    "You have no active chats.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
             }
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -80,7 +107,7 @@ fun ConversationCard(session: ChatSession, onClick: () -> Unit) {
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -96,8 +123,17 @@ fun ConversationCard(session: ChatSession, onClick: () -> Unit) {
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column {
-                Text(session.postDescription, fontWeight = FontWeight.Bold)
-                Text(session.lastMessage, color = Color.Gray, maxLines = 1)
+                Text(
+                    session.postDescription,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    session.lastMessage,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
         }
     }
@@ -106,6 +142,7 @@ fun ConversationCard(session: ChatSession, onClick: () -> Unit) {
 @Preview(showBackground = true)
 @Composable
 fun ConversationsScreenPreview() {
-    // This screen would be empty in preview as it needs a NavController
-    // ConversationsScreen(navController = rememberNavController())
+    FindrTheme {
+        ConversationsScreen(navController = rememberNavController())
+    }
 }

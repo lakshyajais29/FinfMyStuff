@@ -13,24 +13,29 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.rememberNavController
+import com.example.findr.ui.theme.FindrTheme
 import com.google.firebase.auth.FirebaseAuth
 
+// ✅ UPDATED: The screen now accepts a NavController
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(navController: NavController) {
     val user = FirebaseAuth.getInstance().currentUser
-    val email = user?.email ?: "Unknown User"
-    val name = user?.displayName ?: "Student"
+    // This state will update when the user logs out
+    val email by remember(user) { mutableStateOf(user?.email ?: "Unknown User") }
+    val name by remember(user) { mutableStateOf(user?.displayName ?: "Student") }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8F9FA))
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -42,7 +47,7 @@ fun ProfileScreen() {
             modifier = Modifier
                 .size(120.dp)
                 .clip(CircleShape)
-                .background(Color.White)
+                .background(MaterialTheme.colorScheme.surface)
                 .padding(8.dp)
         )
 
@@ -51,13 +56,14 @@ fun ProfileScreen() {
         Text(
             text = name,
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         Text(
             text = email,
             style = MaterialTheme.typography.bodyLarge,
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -67,39 +73,58 @@ fun ProfileScreen() {
         Spacer(modifier = Modifier.weight(1f))
 
         Button(
-            // ✅ CORRECTED: This simply signs the user out. The AuthStateListener will handle navigation.
             onClick = {
                 FirebaseAuth.getInstance().signOut()
+                // ✅ ADDED: Navigate to the sign-in screen and clear all previous screens from the back stack
+                navController.navigate("signin") {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        inclusive = true
+                    }
+                    launchSingleTop = true
+                }
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
         ) {
-            Icon(Icons.Default.ExitToApp, contentDescription = "Logout Icon", tint = Color.White)
+            Icon(
+                Icons.Default.ExitToApp,
+                contentDescription = "Logout Icon",
+                tint = MaterialTheme.colorScheme.onError
+            )
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Log Out", color = Color.White)
+            Text("Log Out", color = MaterialTheme.colorScheme.onError)
         }
     }
 }
 
-// ... ProfileInfoCard and Preview remain the same ...
 @Composable
 fun ProfileInfoCard(icon: ImageVector, text: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        // ✅ CHANGED: Use the theme's surface color
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(imageVector = icon, contentDescription = null, tint = Color(0xFF1A3C73))
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                // ✅ CHANGED: Use the theme's primary color for the icon
+                tint = MaterialTheme.colorScheme.primary
+            )
             Spacer(modifier = Modifier.width(16.dp))
-            Text(text = text)
+            Text(
+                text = text,
+                // ✅ CHANGED: Use the theme's text color for surfaces
+                color = MaterialTheme.colorScheme.onSurface
+            )
         }
     }
 }
@@ -107,5 +132,8 @@ fun ProfileInfoCard(icon: ImageVector, text: String) {
 @Preview(showBackground = true)
 @Composable
 fun ProfileScreenPreview() {
-    ProfileScreen()
+    // ✅ WRAPPED IN THEME: Allows you to preview dark mode correctly
+    FindrTheme {
+        ProfileScreen(navController = rememberNavController())
+    }
 }

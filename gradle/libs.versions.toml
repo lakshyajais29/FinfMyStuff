@@ -1,6 +1,7 @@
 [versions]
 # Android & Kotlin
-agp = "8.4.2"
+agp = "8.8.2"
+coreSplashscreen = "1.0.1"
 kotlin = "2.0.0"
 coreKtx = "1.13.1"
 
@@ -27,6 +28,7 @@ espressoCore = "3.6.1"
 [libraries]
 # Android & Jetpack Compose
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
