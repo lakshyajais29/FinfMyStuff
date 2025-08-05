@@ -2,21 +2,23 @@ package com.example.findr
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.*
-import androidx.compose.ui.unit.*
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
 import com.example.findr.ui.theme.FindrTheme
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.ktx.userProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
 
-// Function to handle Sign Up logic (this part was correct)
 fun signUpUser(
     name: String,
     email: String,
@@ -31,6 +33,13 @@ fun signUpUser(
         .addOnSuccessListener {
             val user = auth.currentUser
             if (user != null) {
+
+                val profileUpdates = userProfileChangeRequest {
+                    displayName = name
+                }
+                user.updateProfile(profileUpdates)
+
+
                 val userMap = mapOf(
                     "uid" to user.uid,
                     "email" to user.email,
@@ -65,7 +74,8 @@ fun SignUpScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = 24.dp)
+                .verticalScroll(rememberScrollState()), // Make the screen scrollable
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -138,7 +148,6 @@ fun SignUpScreen(
                         Spacer(modifier = Modifier.height(20.dp))
 
                         Button(
-                            // ✅ FIXED: Added the missing onClick logic
                             onClick = {
                                 val kietEmailRegex = Regex("^[a-zA-Z0-9._%+-]+@kiet\\.edu$")
                                 val trimmedEmail = email.trim()
@@ -160,7 +169,7 @@ fun SignUpScreen(
                                         password = trimmedPassword,
                                         onSuccess = {
                                             isLoading = false
-                                            onNavigateToSignIn() // Navigate on success
+                                            onNavigateToSignIn()
                                         },
                                         onError = { errorMsg ->
                                             isLoading = false

@@ -10,18 +10,18 @@ import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        // ✅ Call installSplashScreen() BEFORE super.onCreate()
+
         installSplashScreen()
 
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Initialize Cloudinary
+
         CloudinaryUtil.initCloudinary(applicationContext)
 
         setContent {
             FindrTheme {
-                // The AppNavigation composable now determines the start route
+
                 AppNavigation()
             }
         }

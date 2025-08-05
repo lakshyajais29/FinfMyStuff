@@ -12,7 +12,7 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 
-// ✅ UPDATED: The class now holds an Int for the drawable resource ID.
+
 sealed class Screen(val route: String, val label: String, val iconResId: Int) {
     object Home : Screen("home", "Home", R.drawable.home)
     object Chats : Screen("chats", "Chats", R.drawable.chat)
@@ -52,7 +52,7 @@ fun BottomNavigationBar(navController: NavController) {
                     }
                 },
                 icon = {
-                    // ✅ UPDATED: This now uses painterResource to load your drawable image.
+
                     Icon(
                         painter = painterResource(id = screen.iconResId),
                         contentDescription = screen.label,

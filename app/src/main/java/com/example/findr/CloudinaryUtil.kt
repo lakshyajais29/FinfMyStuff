@@ -15,8 +15,8 @@ object CloudinaryUtil {
         if (initialized) return
 
         val config: HashMap<String, String> = HashMap()
-        config["cloud_name"] = "driulxei4"  // ✅ Replace with your cloud name
-        config["upload_preset"] = "upload_preset_android" // 🔓 Unsigned preset only
+        config["cloud_name"] = "driulxei4"
+        config["upload_preset"] = "upload_preset_android"
 
         MediaManager.init(context, config)
         initialized = true

@@ -8,6 +8,6 @@ data class LostFoundItem(
     val location: String = "",
     val imageUrl: String = "",
     val timestamp: Long = System.currentTimeMillis(),
-    val type: String = "", // "Lost" or "Found"
-    val postedBy: String = "" // user UID
+    val type: String = "",
+    val postedBy: String = ""
 )

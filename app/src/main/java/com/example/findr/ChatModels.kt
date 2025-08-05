@@ -1,6 +1,6 @@
 package com.example.findr
 
-// Represents a single message in a chat
+
 data class ChatMessage(
     val messageId: String = "",
     val text: String = "",
@@ -8,7 +8,7 @@ data class ChatMessage(
     val timestamp: Long = System.currentTimeMillis()
 )
 
-// Represents a chat session between two users about an item
+
 data class ChatSession(
     val sessionId: String = "",
     val postId: String = "",

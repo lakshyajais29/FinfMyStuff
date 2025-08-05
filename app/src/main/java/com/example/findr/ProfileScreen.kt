@@ -23,14 +23,27 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.rememberNavController
 import com.example.findr.ui.theme.FindrTheme
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
-// ✅ UPDATED: The screen now accepts a NavController
 @Composable
 fun ProfileScreen(navController: NavController) {
     val user = FirebaseAuth.getInstance().currentUser
-    // This state will update when the user logs out
-    val email by remember(user) { mutableStateOf(user?.email ?: "Unknown User") }
-    val name by remember(user) { mutableStateOf(user?.displayName ?: "Student") }
+    val email = user?.email ?: "Unknown User"
+
+    // State to hold the name fetched from Firestore
+    var name by remember { mutableStateOf("Student") }
+
+    // Effect to fetch the user's name from your "users" collection
+    LaunchedEffect(user) {
+        if (user != null) {
+            FirebaseFirestore.getInstance().collection("users").document(user.uid).get()
+                .addOnSuccessListener { document ->
+                    if (document != null && document.exists()) {
+                        name = document.getString("name") ?: user.displayName ?: "Student"
+                    }
+                }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -53,6 +66,7 @@ fun ProfileScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // This will now display the name fetched from Firestore
         Text(
             text = name,
             style = MaterialTheme.typography.headlineSmall,
@@ -75,7 +89,7 @@ fun ProfileScreen(navController: NavController) {
         Button(
             onClick = {
                 FirebaseAuth.getInstance().signOut()
-                // ✅ ADDED: Navigate to the sign-in screen and clear all previous screens from the back stack
+                // Navigate to the sign-in screen and clear all previous screens
                 navController.navigate("signin") {
                     popUpTo(navController.graph.findStartDestination().id) {
                         inclusive = true
@@ -105,7 +119,6 @@ fun ProfileInfoCard(icon: ImageVector, text: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        // ✅ CHANGED: Use the theme's surface color
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
@@ -116,13 +129,11 @@ fun ProfileInfoCard(icon: ImageVector, text: String) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                // ✅ CHANGED: Use the theme's primary color for the icon
                 tint = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.width(16.dp))
             Text(
                 text = text,
-                // ✅ CHANGED: Use the theme's text color for surfaces
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
@@ -132,7 +143,6 @@ fun ProfileInfoCard(icon: ImageVector, text: String) {
 @Preview(showBackground = true)
 @Composable
 fun ProfileScreenPreview() {
-    // ✅ WRAPPED IN THEME: Allows you to preview dark mode correctly
     FindrTheme {
         ProfileScreen(navController = rememberNavController())
     }

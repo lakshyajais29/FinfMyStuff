@@ -17,19 +17,17 @@ fun AppNavigation() {
     val startDestination = if (FirebaseAuth.getInstance().currentUser != null) {
         "main" // User is already logged in, go to the main layout
     } else {
-        "signin" // User is not logged in, go to the sign-in screen
+        "signin"
     }
 
-    // The NavHost now starts directly at the correct screen.
+
     NavHost(navController = navController, startDestination = startDestination) {
 
-        // The old "splash" route has been removed.
 
         composable("signin") {
             SignInScreen(
                 onNavigateToSignUp = { navController.navigate("signup") },
                 onLoginSuccess = {
-                    // Navigate to main and clear the back stack so the user can't go back
                     navController.navigate("main") {
                         popUpTo("signin") { inclusive = true }
                     }
@@ -43,8 +41,7 @@ fun AppNavigation() {
             )
         }
 
-        // The MainLayout now accepts the top-level NavController to handle
-        // navigation to full-screen destinations like ItemDetails and Chat.
+
         composable("main") {
             MainLayout(navController = navController)
         }

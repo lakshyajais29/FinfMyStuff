@@ -40,13 +40,13 @@ fun ConversationsScreen(navController: NavController) {
             return@DisposableEffect onDispose {}
         }
 
-        // ✅ CORRECTED: This query now fetches all chats and filters on the client side.
+
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val loadedConversations = snapshot.children.mapNotNull {
                     it.child("metadata").getValue(ChatSession::class.java)
                 }.filter {
-                    // This finds all chats where the current user is a participant.
+
                     it.participants.contains(currentUserId)
                 }
                 conversations = loadedConversations.sortedByDescending { it.lastMessageTimestamp }
@@ -54,7 +54,7 @@ fun ConversationsScreen(navController: NavController) {
             }
             override fun onCancelled(error: DatabaseError) {
                 isLoading = false
-                /* Handle error */
+
             }
         }
         dbRef.addValueEventListener(listener)

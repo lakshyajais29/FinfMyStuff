@@ -38,16 +38,16 @@ data class PostItem(
     val timestamp: Long = 0L
 )
 
-// ✅ UPDATED: The function now accepts both NavControllers
+
 @Composable
 fun HomeScreen(
-    navController: NavController?, // For navigating to full-screen pages (e.g., details)
-    innerNavController: NavController? // For navigating between bottom bar tabs (e.g., to Post)
+    navController: NavController?,
+    innerNavController: NavController?
 ) {
     var posts by remember { mutableStateOf(listOf<PostItem>()) }
     var searchText by remember { mutableStateOf("") }
 
-    // This real-time listener is already correct.
+
     DisposableEffect(Unit) {
         val db = FirebaseFirestore.getInstance()
         val listenerRegistration: ListenerRegistration = db.collection("posts")
@@ -116,7 +116,7 @@ fun HomeScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Button(
-                // ✅ CORRECTED: Uses the innerNavController to navigate to another bottom bar screen
+
                 onClick = { innerNavController?.navigate("${Screen.Post.route}?itemType=Lost") },
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
                 shape = RoundedCornerShape(12.dp),
@@ -125,7 +125,7 @@ fun HomeScreen(
                 Text("I Lost Something", color = MaterialTheme.colorScheme.onSecondary)
             }
             Button(
-                // ✅ CORRECTED: Uses the innerNavController to navigate to another bottom bar screen
+
                 onClick = { innerNavController?.navigate("${Screen.Post.route}?itemType=Found") },
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 shape = RoundedCornerShape(12.dp),
@@ -150,7 +150,7 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(posts) { item ->
-                // This correctly uses the main navController to navigate to a full-screen page
+
                 PostCard(item = item, navController = navController)
             }
         }
@@ -209,7 +209,7 @@ fun PostCard(item: PostItem, navController: NavController?) {
 fun HomeScreenPreview() {
     FindrTheme {
         val navController = rememberNavController()
-        val innerNavController = rememberNavController() // Create dummy for preview
+        val innerNavController = rememberNavController()
         Scaffold(
             bottomBar = { BottomNavigationBar(navController = innerNavController) }
         ) { innerPadding ->

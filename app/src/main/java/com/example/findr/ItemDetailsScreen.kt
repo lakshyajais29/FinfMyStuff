@@ -105,7 +105,7 @@ fun ItemDetailsScreen(
                             )
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            // ✅ ADDED: Row to display the location information
+
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     imageVector = Icons.Default.LocationOn,
@@ -119,12 +119,12 @@ fun ItemDetailsScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
-                            // Add padding at the bottom to ensure it doesn't overlap with the button
+
                             Spacer(modifier = Modifier.height(80.dp))
                         }
                     }
 
-                    // This Box places the button at the bottom of the screen
+
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
                         if (item.postedBy.isNotBlank() && item.postedBy != currentUserId) {
                             Button(

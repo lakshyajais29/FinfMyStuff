@@ -62,7 +62,7 @@ fun SignInScreen(
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Logo
+
                 Image(
                     painter = painterResource(id = R.drawable.findmystuff),
                     contentDescription = "Campus Logo",
@@ -72,7 +72,7 @@ fun SignInScreen(
                         .padding(bottom = 24.dp)
                 )
 
-                // Sign In Card
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -97,7 +97,7 @@ fun SignInScreen(
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
 
-                        // Email
+
                         OutlinedTextField(
                             value = email,
                             onValueChange = { email = it },
@@ -108,7 +108,6 @@ fun SignInScreen(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        // Password
                         OutlinedTextField(
                             value = password,
                             onValueChange = { password = it },
@@ -142,14 +141,14 @@ fun SignInScreen(
                             }
                         }
 
-                        // Error message
+
                         error?.let {
                             Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // Sign In Button
+
                         Button(
                             onClick = {
                                 val trimmedEmail = email.trim()
@@ -188,7 +187,7 @@ fun SignInScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // Navigate to Sign Up
+
                         TextButton(onClick = onNavigateToSignUp) {
                             Text("Don't have an account? Sign Up", color = MaterialTheme.colorScheme.primary)
                         }

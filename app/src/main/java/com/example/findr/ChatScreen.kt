@@ -66,7 +66,7 @@ fun ChatScreen(
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize()
-                // ✅ CHANGED: Use the theme's background color
+
                 .background(MaterialTheme.colorScheme.background)
         ) {
             LazyColumn(
@@ -103,10 +103,10 @@ fun ChatScreen(
                             text = ""
                         }
                     },
-                    // ✅ CHANGED: Use the theme's primary color
+
                     modifier = Modifier.background(MaterialTheme.colorScheme.primary, CircleShape)
                 ) {
-                    // ✅ CHANGED: Use the theme's text color for icons on a primary background
+
                     Icon(Icons.Default.Send, contentDescription = "Send", tint = MaterialTheme.colorScheme.onPrimary)
                 }
             }
@@ -132,13 +132,13 @@ fun MessageBubble(message: ChatMessage, isCurrentUser: Boolean) {
                         bottomEnd = if (isCurrentUser) 0.dp else 16.dp
                     )
                 )
-                // ✅ CHANGED: Use theme colors for the message bubbles
+
                 .background(if (isCurrentUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
                 .padding(horizontal = 16.dp, vertical = 10.dp)
         ) {
             Text(
                 text = message.text,
-                // ✅ CHANGED: Use theme colors for the text inside the bubbles
+
                 color = if (isCurrentUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
             )
         }
@@ -148,7 +148,7 @@ fun MessageBubble(message: ChatMessage, isCurrentUser: Boolean) {
 @Preview(showBackground = true)
 @Composable
 fun ChatScreenPreview() {
-    FindrTheme { // Wrap preview in your app's theme to see it correctly
+    FindrTheme {
         ChatScreen(chatId = "preview_chat_id", navController = rememberNavController())
     }
 }

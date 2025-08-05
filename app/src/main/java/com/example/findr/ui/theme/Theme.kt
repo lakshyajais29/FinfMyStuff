@@ -27,17 +27,17 @@ private val DarkColorScheme = darkColorScheme(
 private val LightColorScheme = lightColorScheme(
     primary = Color(0xFF1A3C73),
     secondary = Color(0xFFF9A825),
-    background = Color(0xFFF8F9FA), // This is your light gray background
-    surface = Color.White,         // This is the white for cards
+    background = Color(0xFFF8F9FA),
+    surface = Color.White,
     onPrimary = Color.White,
     onSecondary = Color.Black,
-    onBackground = Color.Black,      // This is the black text color
-    onSurface = Color.Black,         // This is the black text color for cards
+    onBackground = Color.Black,
+    onSurface = Color.Black,
 )
 
 @Composable
 fun FindrTheme(
-    darkTheme: Boolean = false, // ✅ CHANGED: This is now hardcoded to false
+    darkTheme: Boolean = false,
     content: @Composable () -> Unit
 ) {
     // This will now always choose the LightColorScheme, regardless of the phone's setting.
