@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -60,11 +61,13 @@ fun MyItemsScreen(navController: NavController) {
                         return@addSnapshotListener
                     }
                     if (snapshot != null) {
+                        // ✅ UPDATED: Fetches the new fields correctly
                         val list = snapshot.documents.mapNotNull { doc ->
                             PostItem(
                                 id = doc.id,
-                                imageUrl = doc.getString("imageUrl") ?: "",
-                                description = doc.getString("description") ?: "",
+                                imageUrl = doc.getString("imageUrl"), // Can be null
+                                description = doc.getString("description") ?: "No description",
+                                itemType = doc.getString("itemType") ?: "Lost", // Fetch itemType
                                 timestamp = doc.getTimestamp("timestamp")?.toDate()?.time ?: 0L
                             )
                         }
@@ -77,11 +80,6 @@ fun MyItemsScreen(navController: NavController) {
         }
     } else {
         isLoading = false
-        // Add dummy data for preview
-        items = listOf(
-            PostItem("1", "", "Sample Item 1", System.currentTimeMillis()),
-            PostItem("2", "", "Sample Item 2", System.currentTimeMillis())
-        )
     }
 
     Column(
@@ -137,11 +135,8 @@ fun MyItemsScreen(navController: NavController) {
                     onClick = {
                         postToDelete?.let { item ->
                             deletePostFromFirestore(item.id) { success ->
-                                if (success) {
-                                    Toast.makeText(context, "Post deleted", Toast.LENGTH_SHORT).show()
-                                } else {
-                                    Toast.makeText(context, "Failed to delete post", Toast.LENGTH_SHORT).show()
-                                }
+                                val message = if (success) "Post deleted" else "Failed to delete post"
+                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                             }
                         }
                         postToDelete = null
@@ -187,14 +182,32 @@ fun MyItemCard(
             Column(
                 modifier = Modifier.clickable { navController.navigate("item_details/${item.id}") }
             ) {
-                Image(
-                    painter = rememberAsyncImagePainter(item.imageUrl),
-                    contentDescription = item.description,
-                    contentScale = ContentScale.Crop,
+                // ✅ MODIFIED: This Box now conditionally shows the image or a placeholder
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(1f)
-                )
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
+                    // Only show the image if it's a "Lost" item and an image URL exists
+                    if (item.itemType == "Lost" && item.imageUrl != null) {
+                        Image(
+                            painter = rememberAsyncImagePainter(item.imageUrl),
+                            contentDescription = item.description,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        // Show a generic search icon for "Found" items to prevent fraud
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Found Item",
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
                 Column(modifier = Modifier.padding(12.dp)) {
                     Text(
                         text = item.description,

@@ -16,21 +16,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
+import com.example.findr.ui.theme.FindrTheme
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.FirebaseFirestore
-import java.text.SimpleDateFormat
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.util.*
-
 
 data class DetailedPostItem(
     val id: String = "",
-    val imageUrl: String = "",
+    val imageUrl: String? = null,
     val description: String = "",
     val location: String = "",
+    val itemType: String = "Lost",
     val timestamp: Long = 0L,
     val postedBy: String = ""
 )
@@ -52,9 +57,10 @@ fun ItemDetailsScreen(
                     if (document != null && document.exists()) {
                         post = DetailedPostItem(
                             id = document.id,
-                            imageUrl = document.getString("imageUrl") ?: "",
+                            imageUrl = document.getString("imageUrl"),
                             description = document.getString("description") ?: "No Description",
-                            location = document.getString("location") ?: "No Location Provided", // ✅ Fetch the location
+                            location = document.getString("location") ?: "No Location Provided",
+                            itemType = document.getString("itemType") ?: "Lost",
                             timestamp = document.getTimestamp("timestamp")?.toDate()?.time ?: 0L,
                             postedBy = document.getString("userId") ?: ""
                         )
@@ -88,14 +94,30 @@ fun ItemDetailsScreen(
             } else {
                 post?.let { item ->
                     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                        Image(
-                            painter = rememberAsyncImagePainter(item.imageUrl),
-                            contentDescription = item.description,
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(300.dp),
-                            contentScale = ContentScale.Crop
-                        )
+                                .height(300.dp)
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (item.itemType == "Lost" && item.imageUrl != null) {
+                                Image(
+                                    painter = rememberAsyncImagePainter(item.imageUrl),
+                                    contentDescription = item.description,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Text(
+                                    "Photo is kept private for verification.",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(16.dp)
+                                )
+                            }
+                        }
+
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
                                 text = item.description,
@@ -104,8 +126,6 @@ fun ItemDetailsScreen(
                                 color = MaterialTheme.colorScheme.onBackground
                             )
                             Spacer(modifier = Modifier.height(16.dp))
-
-
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     imageVector = Icons.Default.LocationOn,
@@ -119,11 +139,9 @@ fun ItemDetailsScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
-
                             Spacer(modifier = Modifier.height(80.dp))
                         }
                     }
-
 
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
                         if (item.postedBy.isNotBlank() && item.postedBy != currentUserId) {
@@ -141,7 +159,14 @@ fun ItemDetailsScreen(
                                             postItem = item,
                                             participants = listOf(currentUserId, posterId)
                                         )
-                                        navController.navigate("chat/$chatId")
+
+                                        // ✅ CORRECTED: This now correctly builds the route with the encoded URL
+                                        var route = "chat/$chatId"
+                                        if (item.itemType == "Found" && item.imageUrl != null) {
+                                            val encodedUrl = URLEncoder.encode(item.imageUrl, StandardCharsets.UTF_8.toString())
+                                            route += "?verificationImageUrl=$encodedUrl"
+                                        }
+                                        navController.navigate(route)
                                     }
                                 },
                                 modifier = Modifier
@@ -175,10 +200,18 @@ fun createChatSession(chatId: String, postItem: DetailedPostItem, participants: 
     val session = ChatSession(
         sessionId = chatId,
         postId = postItem.id,
-        postImageUrl = postItem.imageUrl,
+        postImageUrl = postItem.imageUrl ?: "",
         postDescription = postItem.description,
         participants = participants,
-        lastMessageTimestamp = System.currentTimeMillis() // Set initial timestamp
+        lastMessageTimestamp = System.currentTimeMillis()
     )
     dbRef.setValue(session)
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ItemDetailsScreenPreview() {
+    FindrTheme {
+        ItemDetailsScreen(postId = "preview_id", navController = rememberNavController())
+    }
 }

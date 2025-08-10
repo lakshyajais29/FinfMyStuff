@@ -91,7 +91,7 @@ fun SignUpScreen(
                         .padding(bottom = 24.dp)
                 )
 
-                // Sign Up Card
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),

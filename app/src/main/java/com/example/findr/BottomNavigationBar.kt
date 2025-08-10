@@ -61,7 +61,7 @@ fun BottomNavigationBar(navController: NavController) {
                 },
                 label = { Text(screen.label) },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color(0xFFF9A825), // Orange
+                    selectedIconColor = Color(0xFFF9A825),
                     selectedTextColor = Color(0xFFF9A825),
                     unselectedIconColor = Color.Gray,
                     unselectedTextColor = Color.Gray

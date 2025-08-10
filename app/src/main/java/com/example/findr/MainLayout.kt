@@ -20,21 +20,17 @@ fun MainLayout(navController: NavController) {
             BottomNavigationBar(navController = innerNavController)
         }
     ) { innerPadding ->
-
         NavHost(
             navController = innerNavController,
             startDestination = Screen.Home.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-
             composable(Screen.Home.route) {
                 HomeScreen(
                     navController = navController,
                     innerNavController = innerNavController
                 )
             }
-
-
             composable(Screen.Chats.route) { ConversationsScreen(navController = navController) }
             composable(Screen.MyItems.route) { MyItemsScreen(navController = navController) }
             composable(Screen.Profile.route) { ProfileScreen(navController = navController) }
@@ -46,10 +42,7 @@ fun MainLayout(navController: NavController) {
                 val itemType = backStackEntry.arguments?.getString("itemType")
                 PostItemScreen(
                     itemType = itemType ?: "Lost",
-                    onUploadComplete = {
-
-                        innerNavController.popBackStack()
-                    }
+                    onUploadComplete = { innerNavController.popBackStack() }
                 )
             }
         }

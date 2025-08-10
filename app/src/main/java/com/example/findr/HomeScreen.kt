@@ -31,13 +31,14 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import java.util.concurrent.TimeUnit
 
+// ✅ UPDATED: The data class now supports nullable image URLs and an item type
 data class PostItem(
     val id: String = "",
-    val imageUrl: String = "",
+    val imageUrl: String? = null, // Can be null for "Found" items with no public image
     val description: String = "",
+    val itemType: String = "Lost", // Differentiates between "Lost" and "Found"
     val timestamp: Long = 0L
 )
-
 
 @Composable
 fun HomeScreen(
@@ -61,10 +62,12 @@ fun HomeScreen(
 
                 if (result != null) {
                     val list = result.documents.mapNotNull { doc ->
-                        val url = doc.getString("imageUrl") ?: return@mapNotNull null
+                        // ✅ UPDATED: Fetches the new fields correctly
+                        val url = doc.getString("imageUrl")
                         val desc = doc.getString("description") ?: "No description"
+                        val type = doc.getString("itemType") ?: "Lost"
                         val timestamp = doc.getTimestamp("timestamp")?.toDate()?.time ?: 0L
-                        PostItem(doc.id, url, desc, timestamp)
+                        PostItem(doc.id, url, desc, type, timestamp)
                     }
                     posts = list
                 }
@@ -116,7 +119,6 @@ fun HomeScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Button(
-
                 onClick = { innerNavController?.navigate("${Screen.Post.route}?itemType=Lost") },
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
                 shape = RoundedCornerShape(12.dp),
@@ -125,7 +127,6 @@ fun HomeScreen(
                 Text("I Lost Something", color = MaterialTheme.colorScheme.onSecondary)
             }
             Button(
-
                 onClick = { innerNavController?.navigate("${Screen.Post.route}?itemType=Found") },
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 shape = RoundedCornerShape(12.dp),
@@ -150,7 +151,6 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(posts) { item ->
-
                 PostCard(item = item, navController = navController)
             }
         }
@@ -177,14 +177,33 @@ fun PostCard(item: PostItem, navController: NavController?) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column {
-            Image(
-                painter = rememberAsyncImagePainter(item.imageUrl),
-                contentDescription = "Item image",
-                contentScale = ContentScale.Crop,
+            // ✅ MODIFIED: This Box now conditionally shows the image or a placeholder
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
-            )
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                // Only show the image if it's a "Lost" item and an image URL exists
+                if (item.itemType == "Lost" && item.imageUrl != null) {
+                    Image(
+                        painter = rememberAsyncImagePainter(item.imageUrl),
+                        contentDescription = "Item image",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    // Show a generic search icon for "Found" items to prevent fraud
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Found Item",
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
             Column(modifier = Modifier.padding(12.dp)) {
                 Text(
                     item.description,

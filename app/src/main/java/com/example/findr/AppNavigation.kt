@@ -12,17 +12,14 @@ import com.google.firebase.auth.FirebaseAuth
 fun AppNavigation() {
     val navController = rememberNavController()
 
-    // ✅ CORRECTED: Determine the start destination before building the NavHost.
-    // This removes the need for a composable splash screen.
+    // This correctly determines the start destination based on login state.
     val startDestination = if (FirebaseAuth.getInstance().currentUser != null) {
-        "main" // User is already logged in, go to the main layout
+        "main"
     } else {
         "signin"
     }
 
-
     NavHost(navController = navController, startDestination = startDestination) {
-
 
         composable("signin") {
             SignInScreen(
@@ -41,7 +38,6 @@ fun AppNavigation() {
             )
         }
 
-
         composable("main") {
             MainLayout(navController = navController)
         }
@@ -54,12 +50,28 @@ fun AppNavigation() {
             ItemDetailsScreen(postId = postId, navController = navController)
         }
 
+        // ✅ CORRECTED: The chat route now accepts an optional verificationImageUrl
         composable(
-            route = "chat/{chatId}",
-            arguments = listOf(navArgument("chatId") { type = NavType.StringType })
+            route = "chat/{chatId}?verificationImageUrl={verificationImageUrl}",
+            arguments = listOf(
+                navArgument("chatId") { type = NavType.StringType },
+                navArgument("verificationImageUrl") {
+                    type = NavType.StringType
+                    nullable = true // This makes the argument optional
+                    defaultValue = null
+                }
+            )
         ) { backStackEntry ->
             val chatId = backStackEntry.arguments?.getString("chatId") ?: ""
-            ChatScreen(chatId = chatId, navController = navController)
+            // Decode the URL back to its original form, as it was encoded before navigation
+            val encodedUrl = backStackEntry.arguments?.getString("verificationImageUrl")
+            val imageUrl = encodedUrl?.let { java.net.URLDecoder.decode(it, "UTF-8") }
+
+            ChatScreen(
+                chatId = chatId,
+                verificationImageUrl = imageUrl, // Pass the URL to the screen
+                navController = navController
+            )
         }
     }
 }
