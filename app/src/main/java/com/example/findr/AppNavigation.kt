@@ -12,7 +12,6 @@ import com.google.firebase.auth.FirebaseAuth
 fun AppNavigation() {
     val navController = rememberNavController()
 
-    // This correctly determines the start destination based on login state.
     val startDestination = if (FirebaseAuth.getInstance().currentUser != null) {
         "main"
     } else {
@@ -50,26 +49,15 @@ fun AppNavigation() {
             ItemDetailsScreen(postId = postId, navController = navController)
         }
 
-        // ✅ CORRECTED: The chat route now accepts an optional verificationImageUrl
         composable(
-            route = "chat/{chatId}?verificationImageUrl={verificationImageUrl}",
+            route = "chat/{chatId}",
             arguments = listOf(
-                navArgument("chatId") { type = NavType.StringType },
-                navArgument("verificationImageUrl") {
-                    type = NavType.StringType
-                    nullable = true // This makes the argument optional
-                    defaultValue = null
-                }
+                navArgument("chatId") { type = NavType.StringType }
             )
         ) { backStackEntry ->
             val chatId = backStackEntry.arguments?.getString("chatId") ?: ""
-            // Decode the URL back to its original form, as it was encoded before navigation
-            val encodedUrl = backStackEntry.arguments?.getString("verificationImageUrl")
-            val imageUrl = encodedUrl?.let { java.net.URLDecoder.decode(it, "UTF-8") }
-
             ChatScreen(
                 chatId = chatId,
-                verificationImageUrl = imageUrl, // Pass the URL to the screen
                 navController = navController
             )
         }

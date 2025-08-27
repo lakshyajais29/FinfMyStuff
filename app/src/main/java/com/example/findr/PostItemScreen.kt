@@ -45,7 +45,7 @@ import java.util.*
 @Composable
 fun PostItemScreen(
     itemType: String,
-    onUploadComplete: (String) -> Unit
+    onUploadComplete: () -> Unit
 ) {
     var currentItemType by remember { mutableStateOf(itemType) }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
@@ -113,42 +113,41 @@ fun PostItemScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // This UI now changes based on whether the item is Lost or Found
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surface)
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
-                .clickable { showBottomSheet = true },
-            contentAlignment = Alignment.Center
-        ) {
-            if (imageUri != null) {
-                Image(
-                    painter = rememberAsyncImagePainter(imageUri),
-                    contentDescription = "Selected item image",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.AddAPhoto,
-                        contentDescription = "Upload Icon",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(48.dp)
+        if (currentItemType == "Lost") {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
+                    .clickable { showBottomSheet = true },
+                contentAlignment = Alignment.Center
+            ) {
+                if (imageUri != null) {
+                    Image(
+                        painter = rememberAsyncImagePainter(imageUri),
+                        contentDescription = "Selected item image",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
                     )
-                    // ✅ Text changes based on context to guide the user
-                    Text(
-                        text = if (currentItemType == "Lost") "Tap to add a photo (optional)"
-                        else "Add a photo for verification (will be kept private)",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
+                } else {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AddAPhoto,
+                            contentDescription = "Upload Icon",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Text(
+                            text = "Tap to add a photo (optional)",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             }
         }
@@ -186,17 +185,15 @@ fun PostItemScreen(
         Button(
             onClick = {
                 errorMessage = null
-                // ✅ MODIFIED: Allow 'Lost' items to be posted without an image
                 if (description.isNotBlank() && location.isNotBlank()) {
                     isUploading = true
-                    if (imageUri != null) {
-                        // If an image is provided, upload it first
+                    if (currentItemType == "Lost" && imageUri != null) {
                         CloudinaryUtil.uploadImage(
                             fileUri = imageUri!!,
                             onSuccess = { imageUrl ->
                                 savePostToFirestore(imageUrl, description, currentItemType, location) { success ->
                                     isUploading = false
-                                    if (success) onUploadComplete(imageUrl)
+                                    if (success) onUploadComplete()
                                     else errorMessage = "Could not save post details."
                                 }
                             },
@@ -207,10 +204,9 @@ fun PostItemScreen(
                             }
                         )
                     } else {
-                        // If no image is provided, save the post directly
                         savePostToFirestore(null, description, currentItemType, location) { success ->
                             isUploading = false
-                            if (success) onUploadComplete("")
+                            if (success) onUploadComplete()
                             else errorMessage = "Could not save post details."
                         }
                     }
@@ -313,7 +309,6 @@ fun ItemTypeToggle(selectedType: String, onTypeSelected: (String) -> Unit) {
     }
 }
 
-// ✅ UPDATED: The function now handles a nullable imageUrl to support posts without images
 fun savePostToFirestore(imageUrl: String?, description: String, itemType: String, location: String, onComplete: (Boolean) -> Unit) {
     val user = FirebaseAuth.getInstance().currentUser ?: return onComplete(false)
     val db = FirebaseFirestore.getInstance()
@@ -326,7 +321,6 @@ fun savePostToFirestore(imageUrl: String?, description: String, itemType: String
         "timestamp" to Date()
     )
 
-    // Only add the imageUrl to the map if one was provided
     if (imageUrl != null) {
         post["imageUrl"] = imageUrl
     }

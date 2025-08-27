@@ -5,7 +5,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -35,7 +34,6 @@ import com.google.firebase.database.*
 @Composable
 fun ChatScreen(
     chatId: String,
-    verificationImageUrl: String?,
     navController: NavController
 ) {
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
@@ -43,8 +41,6 @@ fun ChatScreen(
     var text by remember { mutableStateOf("") }
     val dbRef = FirebaseDatabase.getInstance().getReference("chats/$chatId/messages")
     val metadataRef = FirebaseDatabase.getInstance().getReference("chats/$chatId/metadata")
-
-    var showVerificationButton by remember { mutableStateOf(verificationImageUrl != null) }
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -95,24 +91,8 @@ fun ChatScreen(
                 reverseLayout = true,
                 verticalArrangement = Arrangement.Bottom
             ) {
-                items(messages) { message ->
+                items(messages.sortedByDescending { it.timestamp }) { message ->
                     MessageBubble(message = message, isCurrentUser = message.senderId == currentUserId)
-                }
-            }
-
-            if (showVerificationButton) {
-                Button(
-                    onClick = {
-                        sendMessage(dbRef, metadataRef, currentUserId, text = null, imageUrl = verificationImageUrl)
-                        showVerificationButton = false
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Icon(Icons.Default.AddPhotoAlternate, contentDescription = "Share Photo")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Share Verification Photo")
                 }
             }
 
@@ -158,7 +138,6 @@ fun sendMessage(
 ) {
     val messageId = dbRef.push().key ?: ""
     val timestamp = System.currentTimeMillis()
-    // This will now work correctly
     val message = ChatMessage(messageId, text, imageUrl, senderId, timestamp)
     dbRef.child(messageId).setValue(message)
 
@@ -193,7 +172,6 @@ fun MessageBubble(message: ChatMessage, isCurrentUser: Boolean) {
                 .padding(8.dp)
         ) {
             Column {
-                // This will now work correctly
                 message.imageUrl?.let {
                     Image(
                         painter = rememberAsyncImagePainter(model = it),
@@ -222,7 +200,6 @@ fun ChatScreenPreview() {
     FindrTheme {
         ChatScreen(
             chatId = "preview_chat_id",
-            verificationImageUrl = "https://example.com/image.jpg",
             navController = rememberNavController()
         )
     }

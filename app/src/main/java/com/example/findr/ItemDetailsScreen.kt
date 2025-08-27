@@ -26,8 +26,6 @@ import com.example.findr.ui.theme.FindrTheme
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.FirebaseFirestore
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 import java.util.*
 
 data class DetailedPostItem(
@@ -101,7 +99,7 @@ fun ItemDetailsScreen(
                                 .background(MaterialTheme.colorScheme.surfaceVariant),
                             contentAlignment = Alignment.Center
                         ) {
-                            if (item.itemType == "Lost" && item.imageUrl != null) {
+                            if (item.imageUrl != null) {
                                 Image(
                                     painter = rememberAsyncImagePainter(item.imageUrl),
                                     contentDescription = item.description,
@@ -110,7 +108,7 @@ fun ItemDetailsScreen(
                                 )
                             } else {
                                 Text(
-                                    "Photo is kept private for verification.",
+                                    "No photo provided for this item.",
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     textAlign = TextAlign.Center,
                                     modifier = Modifier.padding(16.dp)
@@ -159,14 +157,7 @@ fun ItemDetailsScreen(
                                             postItem = item,
                                             participants = listOf(currentUserId, posterId)
                                         )
-
-                                        // ✅ CORRECTED: This now correctly builds the route with the encoded URL
-                                        var route = "chat/$chatId"
-                                        if (item.itemType == "Found" && item.imageUrl != null) {
-                                            val encodedUrl = URLEncoder.encode(item.imageUrl, StandardCharsets.UTF_8.toString())
-                                            route += "?verificationImageUrl=$encodedUrl"
-                                        }
-                                        navController.navigate(route)
+                                        navController.navigate("chat/$chatId")
                                     }
                                 },
                                 modifier = Modifier
@@ -183,7 +174,7 @@ fun ItemDetailsScreen(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    "Connect with Owner",
+                                    "Connect with Poster",
                                     color = MaterialTheme.colorScheme.onPrimary
                                 )
                             }
