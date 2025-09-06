@@ -15,7 +15,8 @@ data class ChatSession(
     val postId: String = "",
     val postImageUrl: String = "",
     val postDescription: String = "",
-    val participants: List<String> = emptyList(),
+    // This change is the key to the solution.
+    val participants: Map<String, Boolean> = emptyMap(),
     val lastMessage: String = "",
     val lastMessageTimestamp: Long = 0L
 )

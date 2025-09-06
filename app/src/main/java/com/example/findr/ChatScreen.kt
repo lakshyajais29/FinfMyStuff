@@ -1,6 +1,7 @@
 package com.example.findr
 
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -11,9 +12,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AddPhotoAlternate
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -50,7 +51,9 @@ fun ChatScreen(
                 onSuccess = { imageUrl ->
                     sendMessage(dbRef, metadataRef, currentUserId, text = null, imageUrl = imageUrl)
                 },
-                onError = { /* Handle upload error */ }
+                onError = {
+                    Log.e("ChatScreen", "Image upload failed: $it")
+                }
             )
         }
     }
@@ -60,7 +63,9 @@ fun ChatScreen(
             override fun onDataChange(snapshot: DataSnapshot) {
                 messages = snapshot.children.mapNotNull { it.getValue(ChatMessage::class.java) }
             }
-            override fun onCancelled(error: DatabaseError) { /* Handle error */ }
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("ChatScreen", "Database listener cancelled: ${error.message}")
+            }
         }
         dbRef.addValueEventListener(listener)
         onDispose { dbRef.removeEventListener(listener) }
@@ -72,7 +77,7 @@ fun ChatScreen(
                 title = { Text("Chat") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -88,8 +93,7 @@ fun ChatScreen(
                 modifier = Modifier
                     .weight(1f)
                     .padding(8.dp),
-                reverseLayout = true,
-                verticalArrangement = Arrangement.Bottom
+                reverseLayout = true
             ) {
                 items(messages.sortedByDescending { it.timestamp }) { message ->
                     MessageBubble(message = message, isCurrentUser = message.senderId == currentUserId)
@@ -122,13 +126,14 @@ fun ChatScreen(
                     },
                     modifier = Modifier.background(MaterialTheme.colorScheme.primary, CircleShape)
                 ) {
-                    Icon(Icons.Default.Send, contentDescription = "Send", tint = MaterialTheme.colorScheme.onPrimary)
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = MaterialTheme.colorScheme.onPrimary)
                 }
             }
         }
     }
 }
 
+// ✅ MODIFIED: Added completion listeners to diagnose write failures
 fun sendMessage(
     dbRef: DatabaseReference,
     metadataRef: DatabaseReference,
@@ -139,7 +144,15 @@ fun sendMessage(
     val messageId = dbRef.push().key ?: ""
     val timestamp = System.currentTimeMillis()
     val message = ChatMessage(messageId, text, imageUrl, senderId, timestamp)
+
     dbRef.child(messageId).setValue(message)
+        .addOnSuccessListener {
+            Log.d("ChatScreen", "Message sent successfully!")
+        }
+        .addOnFailureListener { e ->
+            Log.e("ChatScreen", "Failed to send message: ${e.message}")
+        }
+
 
     val lastMessageText = if (!text.isNullOrEmpty()) text else "[Image]"
     metadataRef.updateChildren(

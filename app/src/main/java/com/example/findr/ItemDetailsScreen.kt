@@ -1,5 +1,6 @@
 package com.example.findr
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -7,8 +8,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,6 +29,7 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.*
 
+// This data class does not need changes.
 data class DetailedPostItem(
     val id: String = "",
     val imageUrl: String? = null,
@@ -73,7 +75,7 @@ fun ItemDetailsScreen(
                 title = { Text("Item Details") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -152,12 +154,18 @@ fun ItemDetailsScreen(
                                         } else {
                                             "${posterId}_${currentUserId}_$postId"
                                         }
+                                        // This now creates the correct Map structure
                                         createChatSession(
                                             chatId = chatId,
                                             postItem = item,
-                                            participants = listOf(currentUserId, posterId)
-                                        )
-                                        navController.navigate("chat/$chatId")
+                                            participants = mapOf(currentUserId to true, posterId to true)
+                                        ) { success ->
+                                            if (success) {
+                                                navController.navigate("chat/$chatId")
+                                            } else {
+                                                Log.e("ItemDetails", "Could not create chat session.")
+                                            }
+                                        }
                                     }
                                 },
                                 modifier = Modifier
@@ -168,13 +176,13 @@ fun ItemDetailsScreen(
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                             ) {
                                 Icon(
-                                    Icons.Default.Chat,
+                                    Icons.AutoMirrored.Filled.Chat,
                                     contentDescription = "Chat",
                                     tint = MaterialTheme.colorScheme.onPrimary
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    "Connect with Poster",
+                                    "Connect with Owner",
                                     color = MaterialTheme.colorScheme.onPrimary
                                 )
                             }
@@ -186,8 +194,14 @@ fun ItemDetailsScreen(
     }
 }
 
-fun createChatSession(chatId: String, postItem: DetailedPostItem, participants: List<String>) {
-    val dbRef = FirebaseDatabase.getInstance().getReference("chats/$chatId/metadata")
+
+fun createChatSession(
+    chatId: String,
+    postItem: DetailedPostItem,
+    participants: Map<String, Boolean>,
+    onComplete: (Boolean) -> Unit
+) {
+    val dbRef = FirebaseDatabase.getInstance().getReference("chats/$chatId") // Write to the root of the chat
     val session = ChatSession(
         sessionId = chatId,
         postId = postItem.id,
@@ -196,7 +210,16 @@ fun createChatSession(chatId: String, postItem: DetailedPostItem, participants: 
         participants = participants,
         lastMessageTimestamp = System.currentTimeMillis()
     )
-    dbRef.setValue(session)
+    // We now write the entire session object under a "metadata" child
+    dbRef.child("metadata").setValue(session)
+        .addOnSuccessListener {
+            Log.d("ItemDetails", "Chat session created successfully.")
+            onComplete(true)
+        }
+        .addOnFailureListener { e ->
+            Log.e("ItemDetails", "Failed to create chat session: ${e.message}")
+            onComplete(false)
+        }
 }
 
 @Preview(showBackground = true)
